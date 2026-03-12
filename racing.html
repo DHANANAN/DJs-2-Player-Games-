@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Racing — DJ's Games Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#04040d;--cyan:#00f5ff;--magenta:#ff00aa;--gold:#ffd700;--green:#00ff88;
+  --panel:rgba(0,245,255,.04);--border:rgba(0,245,255,.18);--text:#c8d8ff;--dim:#5a6a8a;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding:1.2rem 1rem;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;z-index:999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;}
+.nav{width:100%;max-width:700px;display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;}
+.back{font-family:'Orbitron',sans-serif;font-size:.6rem;font-weight:700;color:var(--dim);
+  text-decoration:none;border:1px solid var(--dim);padding:.45rem .9rem;letter-spacing:.1em;transition:all .3s;}
+.back:hover{color:var(--cyan);border-color:var(--cyan);}
+.title{font-family:'Press Start 2P',monospace;font-size:.85rem;color:var(--gold);
+  text-shadow:0 0 18px rgba(255,215,0,.6);}
+.hud{width:100%;max-width:700px;display:grid;grid-template-columns:1fr auto 1fr;
+  margin-bottom:.8rem;}
+.sb{text-align:center;padding:.6rem;border:1px solid var(--border);background:var(--panel);}
+.sb+.sb{border-left:none;}
+.sn{font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;}
+.sn.p1{color:var(--cyan);}
+.sn.p2{color:var(--magenta);}
+.sn.mid{color:var(--gold);font-size:1rem;line-height:1.5;}
+.sl{font-family:'Orbitron',sans-serif;font-size:.5rem;color:var(--dim);letter-spacing:.12em;}
+.cw{position:relative;width:min(700px,96vw);border:1px solid var(--border);
+  background:#020208;margin-bottom:.8rem;}
+.cw::before{content:'';position:absolute;inset:-2px;
+  background:linear-gradient(135deg,var(--gold),var(--cyan));z-index:-1;opacity:.4;}
+canvas{display:block;width:100%;}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;background:rgba(4,4,13,.9);z-index:10;}
+.ov.h{display:none;}
+.ot{font-family:'Press Start 2P',monospace;font-size:clamp(.85rem,3.5vw,1.5rem);
+  color:var(--gold);text-shadow:0 0 28px rgba(255,215,0,.7);text-align:center;margin-bottom:.6rem;}
+.os{font-family:'Orbitron',sans-serif;font-size:.6rem;color:var(--dim);letter-spacing:.12em;margin-bottom:1.4rem;text-align:center;line-height:2.}
+.ob{font-family:'Orbitron',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.2em;
+  padding:.8rem 2rem;background:var(--gold);color:var(--bg);border:none;cursor:pointer;transition:all .25s;}
+.ob:hover{background:#fff;}
+.ctrl{width:100%;max-width:700px;display:grid;grid-template-columns:1fr 1fr;gap:.8rem;}
+.cb{border:1px solid var(--border);background:var(--panel);padding:.8rem 1rem;}
+.cb h4{font-family:'Orbitron',sans-serif;font-size:.55rem;color:var(--cyan);letter-spacing:.15em;margin-bottom:.5rem;}
+.cb p{font-size:.82rem;color:var(--dim);line-height:1.7;}
+.k{display:inline-block;font-family:'Orbitron',sans-serif;font-size:.5rem;
+  padding:.1rem .35rem;border:1px solid var(--border);color:var(--text);background:rgba(255,255,255,.05);}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a href="../index.html" class="back">← Hub</a>
+  <span class="title">Racing</span>
+  <span style="width:70px"></span>
+</nav>
+<div class="hud">
+  <div class="sb"><div class="sn p1" id="l1">Lap 0/3</div><div class="sl">Player 1</div></div>
+  <div class="sb"><div class="sn mid" id="countdownEl">3</div><div class="sl">Countdown</div></div>
+  <div class="sb"><div class="sn p2" id="l2">Lap 0/3</div><div class="sl">Player 2</div></div>
+</div>
+<div class="cw">
+  <canvas id="c" height="460"></canvas>
+  <div class="ov" id="ov">
+    <div class="ot">RACING</div>
+    <div class="os">3 Laps · Top-down racing<br>WASD · Arrow Keys<br>Stay on track!</div>
+    <button class="ob" onclick="startRace()">START ENGINES</button>
+  </div>
+</div>
+<div class="ctrl">
+  <div class="cb"><h4>// Player 1 (Cyan)</h4>
+    <p><span class="k">W</span> Accelerate · <span class="k">S</span> Brake<br><span class="k">A</span>/<span class="k">D</span> Steer</p></div>
+  <div class="cb"><h4>// Player 2 (Pink)</h4>
+    <p><span class="k">↑</span> Accelerate · <span class="k">↓</span> Brake<br><span class="k">←</span>/<span class="k">→</span> Steer</p></div>
+</div>
+
+<script>
+/* ─── RACING ENGINE ────────────────────────────────────────
+   Top-down car physics:
+   • speed = acceleration - drag
+   • turn rate proportional to speed
+   • Cars represented as oriented rectangles
+   • Track = oval. Off-track detection slows car.
+   • Lap counting: checkpoints array, must pass in order
+────────────────────────────────────────────────────────── */
+const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
+let W,H,cx,cy,trackRx,trackRy;
+const TOTAL_LAPS=3;
+const keys={};
+let cars=[],running=false,animId=null,countdown=0,cdInterval=null;
+
+function resize(){
+  W=canvas.offsetWidth; H=460;
+  canvas.width=W; canvas.height=H;
+  cx=W/2; cy=H/2;
+  trackRx=W*.41; trackRy=H*.36;
+}
+
+// Track defined as an oval. Track width
+const TRACK_W=68;
+
+function carOnTrack(car){
+  // Check if car center is inside outer oval but outside inner oval
+  const ox=car.x-cx, oy=car.y-cy;
+  const outerR=1, innerR=1;
+  const normO=Math.pow(ox/(trackRx+TRACK_W/2),2)+Math.pow(oy/(trackRy+TRACK_W/2),2);
+  const normI=Math.pow(ox/(trackRx-TRACK_W/2),2)+Math.pow(oy/(trackRy-TRACK_W/2),2);
+  return normO<=1 && normI>=1;
+}
+
+function initCars(){
+  // Start positions: on track bottom, side by side
+  const startAngle=Math.PI/2+.15; // just past bottom
+  const startAngle2=Math.PI/2-.15;
+  cars=[
+    {x:cx+Math.cos(startAngle)*trackRx, y:cy+Math.sin(startAngle)*trackRy,
+     angle:-Math.PI/2+.15, speed:0, steer:0, lap:0, checkpoint:0,
+     col:'#00f5ff', glw:'rgba(0,245,255,.6)', name:'P1', done:false, finishTime:null},
+    {x:cx+Math.cos(startAngle2)*trackRx, y:cy+Math.sin(startAngle2)*trackRy,
+     angle:-Math.PI/2-.15, speed:0, steer:0, lap:0, checkpoint:0,
+     col:'#ff00aa', glw:'rgba(255,0,170,.6)', name:'P2', done:false, finishTime:null},
+  ];
+}
+
+// Checkpoints around oval (angles)
+const CHECKPOINTS=[0, Math.PI/2, Math.PI, 3*Math.PI/2];
+
+window.addEventListener('keydown',e=>{keys[e.key]=true;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();});
+window.addEventListener('keyup',e=>{keys[e.key]=false;});
+
+const MAX_SPD=5.5, ACCEL=.12, BRAKE=.08, DRAG=.97, TURN_SPD=0.042, OFF_DRAG=.92;
+
+function updateCar(car,fwd,back,left,right){
+  if(car.done)return;
+  if(keys[fwd]) car.speed=Math.min(car.speed+ACCEL,MAX_SPD);
+  else if(keys[back]) car.speed=Math.max(car.speed-BRAKE,-MAX_SPD*.3);
+  if(keys[left]) car.angle-=TURN_SPD*(car.speed/MAX_SPD);
+  if(keys[right]) car.angle+=TURN_SPD*(car.speed/MAX_SPD);
+
+  const onTrack=carOnTrack(car);
+  car.speed*=onTrack?DRAG:OFF_DRAG;
+  if(Math.abs(car.speed)<.02)car.speed=0;
+
+  car.x+=Math.cos(car.angle)*car.speed;
+  car.y+=Math.sin(car.angle)*car.speed;
+
+  // Lap / checkpoint logic
+  const carAngle=Math.atan2(car.y-cy, car.x-cx);
+  const angle=(carAngle+Math.PI*2)%(Math.PI*2);
+  const nextCp=car.checkpoint%CHECKPOINTS.length;
+  const cpAngle=(CHECKPOINTS[nextCp]+Math.PI*2)%(Math.PI*2);
+  const diff=Math.abs(angle-cpAngle);
+  if(diff<.25||diff>Math.PI*2-.25){
+    if(nextCp===0 && car.checkpoint>0){
+      car.lap++;
+      document.getElementById(`l${car===cars[0]?1:2}`).textContent=`Lap ${Math.min(car.lap,TOTAL_LAPS)}/${TOTAL_LAPS}`;
+      if(car.lap>=TOTAL_LAPS&&!car.done){
+        car.done=true;
+        car.finishTime=Date.now();
+        checkWinner();
+      }
+    }
+    car.checkpoint++;
+  }
+}
+
+function checkWinner(){
+  const done=cars.filter(c=>c.done);
+  if(done.length===1){
+    // First to finish
+    const w=done[0];
+    setTimeout(()=>endRace(w),500);
+  } else if(done.length===2){
+    const w=done[0].finishTime<done[1].finishTime?done[0]:done[1];
+    setTimeout(()=>endRace(w),500);
+  }
+}
+
+function endRace(winner){
+  running=false; cancelAnimationFrame(animId);
+  const ov=document.getElementById('ov');
+  ov.classList.remove('h');
+  ov.querySelector('.ot').textContent=`🏆 ${winner.name} Wins!`;
+  ov.querySelector('.os').textContent=`${TOTAL_LAPS} laps completed`;
+  ov.querySelector('.ob').textContent='Race Again';
+  ov.querySelector('.ob').onclick=startRace;
+}
+
+function update(){
+  if(countdown>0)return;
+  updateCar(cars[0],'w','s','a','d');
+  updateCar(cars[1],'ArrowUp','ArrowDown','ArrowLeft','ArrowRight');
+}
+
+function drawTrack(){
+  // Outer filled oval
+  ctx.fillStyle='#1a1a1a';
+  ctx.beginPath(); ctx.ellipse(cx,cy,trackRx+TRACK_W/2,trackRy+TRACK_W/2,0,0,Math.PI*2);
+  ctx.fill();
+  // Inner (cut out)
+  ctx.fillStyle='#020208';
+  ctx.beginPath(); ctx.ellipse(cx,cy,trackRx-TRACK_W/2,trackRy-TRACK_W/2,0,0,Math.PI*2);
+  ctx.fill();
+  // Track border lines
+  ctx.strokeStyle='rgba(255,255,255,.15)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.ellipse(cx,cy,trackRx+TRACK_W/2,trackRy+TRACK_W/2,0,0,Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(cx,cy,trackRx-TRACK_W/2,trackRy-TRACK_W/2,0,0,Math.PI*2); ctx.stroke();
+  // Center grass
+  ctx.fillStyle='#060e06';
+  ctx.beginPath(); ctx.ellipse(cx,cy,trackRx-TRACK_W/2-2,trackRy-TRACK_W/2-2,0,0,Math.PI*2); ctx.fill();
+
+  // Start/finish line
+  const sfAngle=Math.PI/2;
+  const ox=Math.cos(sfAngle), oy=Math.sin(sfAngle);
+  const sx=cx+ox*(trackRx-TRACK_W/2), sy=cy+oy*(trackRy-TRACK_W/2);
+  const ex=cx+ox*(trackRx+TRACK_W/2), ey=cy+oy*(trackRy+TRACK_W/2);
+  ctx.strokeStyle='#fff'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(ex,ey); ctx.stroke();
+  // Checkered
+  for(let i=0;i<4;i++){
+    ctx.fillStyle=i%2===0?'#fff':'#333';
+    const t=i/4, t2=(i+1)/4;
+    const px=sx+(ex-sx)*t, py=sy+(ey-sy)*t;
+    const px2=sx+(ex-sx)*t2, py2=sy+(ey-sy)*t2;
+    ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px2,py2); ctx.stroke();
+  }
+
+  // Track dashes
+  ctx.strokeStyle='rgba(255,255,255,.08)'; ctx.lineWidth=1.5; ctx.setLineDash([8,16]);
+  ctx.beginPath(); ctx.ellipse(cx,cy,trackRx,trackRy,0,0,Math.PI*2); ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+const CAR_W=14, CAR_H=22;
+
+function drawCar(car){
+  ctx.save();
+  ctx.translate(car.x,car.y);
+  ctx.rotate(car.angle+Math.PI/2);
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,.4)';
+  ctx.fillRect(-CAR_W/2+2,-CAR_H/2+2,CAR_W,CAR_H);
+  // Body
+  ctx.shadowColor=car.col; ctx.shadowBlur=car.done?0:10;
+  ctx.fillStyle=car.col;
+  ctx.fillRect(-CAR_W/2,-CAR_H/2,CAR_W,CAR_H);
+  // Windscreen
+  ctx.fillStyle='rgba(0,0,0,.6)';
+  ctx.fillRect(-CAR_W/2+2,-CAR_H/2+3,CAR_W-4,7);
+  // Headlights
+  ctx.fillStyle='rgba(255,255,200,.8)';
+  ctx.fillRect(-CAR_W/2+1,-CAR_H/2+1,3,2);
+  ctx.fillRect(CAR_W/2-4,-CAR_H/2+1,3,2);
+  // Name tag
+  ctx.shadowBlur=0;
+  ctx.fillStyle='#fff'; ctx.font='bold 8px Orbitron,sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(car.name,0,0);
+  ctx.restore();
+  ctx.shadowBlur=0;
+}
+
+function drawCountdown(){
+  if(countdown<=0)return;
+  ctx.fillStyle='rgba(255,215,0,.9)';
+  ctx.shadowColor='#ffd700'; ctx.shadowBlur=40;
+  ctx.font=`bold 80px 'Press Start 2P',monospace`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(countdown>0?countdown:'GO!',W/2,H/2);
+  ctx.shadowBlur=0;
+}
+
+function draw(){
+  ctx.fillStyle='#020208'; ctx.fillRect(0,0,W,H);
+  drawTrack();
+  cars.forEach(drawCar);
+  drawCountdown();
+}
+
+function loop(){ update(); draw(); animId=requestAnimationFrame(loop); }
+
+function startRace(){
+  resize(); initCars(); running=true; countdown=3;
+  document.getElementById('l1').textContent='Lap 0/3';
+  document.getElementById('l2').textContent='Lap 0/3';
+  document.getElementById('ov').classList.add('h');
+  if(animId)cancelAnimationFrame(animId);
+  if(cdInterval)clearInterval(cdInterval);
+  cdInterval=setInterval(()=>{
+    countdown--;
+    document.getElementById('countdownEl').textContent=countdown>0?countdown:'GO!';
+    if(countdown<=0)clearInterval(cdInterval);
+  },1000);
+  loop();
+}
+window.addEventListener('resize',()=>{resize();});
+</script>
+</body>
+</html>

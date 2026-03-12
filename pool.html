@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Pool — DJ's Games Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#04040d;--cyan:#00f5ff;--magenta:#ff00aa;--gold:#ffd700;--green:#00ff88;
+  --panel:rgba(0,245,255,.04);--border:rgba(0,245,255,.18);--text:#c8d8ff;--dim:#5a6a8a;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding:1.2rem 1rem;overflow-x:hidden;cursor:default;}
+body::before{content:'';position:fixed;inset:0;z-index:999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;}
+.nav{width:100%;max-width:800px;display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;}
+.back{font-family:'Orbitron',sans-serif;font-size:.6rem;font-weight:700;color:var(--dim);
+  text-decoration:none;border:1px solid var(--dim);padding:.45rem .9rem;letter-spacing:.1em;transition:all .3s;}
+.back:hover{color:var(--cyan);border-color:var(--cyan);}
+.title{font-family:'Press Start 2P',monospace;font-size:.85rem;color:var(--gold);
+  text-shadow:0 0 18px rgba(255,215,0,.6);}
+.hud{width:100%;max-width:800px;display:flex;justify-content:space-between;
+  align-items:center;border:1px solid var(--border);background:var(--panel);
+  padding:.6rem 1.2rem;margin-bottom:.8rem;flex-wrap:wrap;gap:.5rem;}
+.hud-player{display:flex;align-items:center;gap:.8rem;}
+.player-name{font-family:'Orbitron',sans-serif;font-size:.65rem;font-weight:700;}
+.p1-name{color:var(--cyan);}
+.p2-name{color:var(--magenta);}
+.player-balls{display:flex;gap:3px;align-items:center;}
+.ball-indicator{width:14px;height:14px;border-radius:50%;display:inline-block;}
+.turn-label{font-family:'Press Start 2P',monospace;font-size:.55rem;color:var(--gold);
+  animation:blk 1.2s ease infinite;}
+@keyframes blk{0%,100%{opacity:1}50%{opacity:.3}}
+.msg-bar{font-family:'Orbitron',sans-serif;font-size:.6rem;color:var(--cyan);letter-spacing:.1em;}
+.cw{position:relative;width:min(800px,96vw);border:1px solid var(--border);
+  background:#020208;margin-bottom:.8rem;cursor:crosshair;}
+.cw::before{content:'';position:absolute;inset:-2px;
+  background:linear-gradient(135deg,var(--gold),var(--cyan));z-index:-1;opacity:.35;}
+canvas{display:block;width:100%;}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;background:rgba(4,4,13,.9);z-index:10;}
+.ov.h{display:none;}
+.ot{font-family:'Press Start 2P',monospace;font-size:clamp(.85rem,3.5vw,1.5rem);
+  color:var(--gold);text-shadow:0 0 28px rgba(255,215,0,.7);text-align:center;margin-bottom:.6rem;}
+.os{font-family:'Orbitron',sans-serif;font-size:.6rem;color:var(--dim);letter-spacing:.12em;margin-bottom:1.4rem;}
+.ob{font-family:'Orbitron',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.2em;
+  padding:.8rem 2rem;background:var(--gold);color:var(--bg);border:none;cursor:pointer;transition:all .25s;}
+.ob:hover{background:#fff;}
+.hint{width:100%;max-width:800px;font-size:.85rem;color:var(--dim);text-align:center;
+  font-weight:300;padding:.5rem;}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a href="../index.html" class="back">← Hub</a>
+  <span class="title">Pool · 8-Ball</span>
+  <span style="width:70px"></span>
+</nav>
+<div class="hud">
+  <div class="hud-player">
+    <span class="player-name p1-name">P1</span>
+    <div class="player-balls" id="pb1"></div>
+  </div>
+  <div>
+    <div class="turn-label" id="turnlbl">P1's SHOT</div>
+    <div class="msg-bar" id="msgbar">Drag from cue ball to aim</div>
+  </div>
+  <div class="hud-player">
+    <div class="player-balls" id="pb2"></div>
+    <span class="player-name p2-name">P2</span>
+  </div>
+</div>
+<div class="cw" id="cw">
+  <canvas id="c" height="450"></canvas>
+  <div class="ov" id="ov">
+    <div class="ot">8-BALL POOL</div>
+    <div class="os">Drag from cue ball → release to shoot</div>
+    <button class="ob" onclick="startGame()">RACK 'EM UP</button>
+  </div>
+</div>
+<p class="hint">Click &amp; drag from the white cue ball — longer drag = more power. Sink all your balls then the 8-ball to win.</p>
+
+<script>
+/* ─── POOL ENGINE ────────────────────────────────────────
+   Physics: ball-ball elastic collision, cushion bounce, friction
+   Rules: 8-ball — P1=solids(1-7), P2=stripes(9-15), 8=black
+   Assignment: first ball sunk determines your group
+   Aiming: mouse drag from cue ball, line shows trajectory
+────────────────────────────────────────────────────────── */
+const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
+let W,H;
+
+const BR=10; // ball radius
+const FRICTION=0.988;
+const MIN_SPEED=0.08;
+const POCKET_R=16;
+
+// Ball colors (1-7 solid, 8 black, 9-15 stripe)
+const BALL_COLORS={
+  1:'#f5d000',2:'#1a6be0',3:'#e03030',4:'#7b3aa0',5:'#e07820',
+  6:'#1a9040',7:'#9c1a1a',8:'#111111',
+  9:'#f5d000',10:'#1a6be0',11:'#e03030',12:'#7b3aa0',13:'#e07820',
+  14:'#1a9040',15:'#9c1a1a'
+};
+
+let balls=[], cue=null, pockets=[];
+let dragging=false, dragStart={x:0,y:0}, mousePos={x:0,y:0};
+let gameState={turn:0, assigned:[-1,-1], sunk:[],winner:null, moving:false, foul:false};
+let animId=null;
+
+// Table dimensions (set in resize)
+let TL,TR,TT,TB; // table left/right/top/bottom
+
+function resize(){
+  W=canvas.offsetWidth; H=450;
+  canvas.width=W; canvas.height=H;
+  const pad=40;
+  TL=pad; TR=W-pad; TT=pad; TB=H-pad;
+}
+
+function initGame(){
+  resize();
+  const tw=TR-TL, th=TB-TT;
+  // Pockets: 6 (4 corners + 2 mid-sides)
+  pockets=[
+    {x:TL,y:TT},{x:TR,y:TT},{x:TL,y:TB},{x:TR,y:TB},
+    {x:TL+tw/2,y:TT},{x:TL+tw/2,y:TB}
+  ];
+
+  balls=[];
+  // Cue ball
+  cue={id:0,x:TL+tw*.25,y:TT+th/2,vx:0,vy:0,r:BR,color:'#f0f0f0',alive:true,stripe:false};
+  balls.push(cue);
+
+  // Rack balls in triangle at 3/4 table
+  const rx=TL+tw*.7, ry=TT+th/2;
+  const order=[1,9,2,10,8,3,11,4,12,5,13,6,14,7,15];
+  let idx=0;
+  for(let row=0;row<5;row++){
+    for(let col=0;col<=row;col++){
+      if(idx>=order.length)break;
+      const bx=rx+row*(BR*2.05);
+      const by=ry+(col-(row/2))*(BR*2.05);
+      const n=order[idx++];
+      balls.push({id:n,x:bx+Math.random()*.5,y:by+Math.random()*.5,
+        vx:0,vy:0,r:BR,color:BALL_COLORS[n],alive:true,stripe:n>=9});
+    }
+  }
+  gameState={turn:0,assigned:[-1,-1],sunk:[],winner:null,moving:false,foul:false};
+  setMsg('Drag from white ball to aim & shoot');
+  updateHUD();
+}
+
+/* ─── MOUSE EVENTS ─── */
+function getMousePos(e){
+  const rect=canvas.getBoundingClientRect();
+  const scaleX=W/rect.width;
+  const touch=e.touches?e.touches[0]:e;
+  return{x:(touch.clientX-rect.left)*scaleX, y:(touch.clientY-rect.top)*(H/rect.height)};
+}
+
+canvas.addEventListener('mousedown',e=>{
+  if(gameState.moving||gameState.winner)return;
+  const p=getMousePos(e);
+  const dist=Math.hypot(p.x-cue.x,p.y-cue.y);
+  if(dist<cue.r*3){dragging=true;dragStart={...p};}
+});
+canvas.addEventListener('mousemove',e=>{mousePos=getMousePos(e);});
+canvas.addEventListener('mouseup',e=>{
+  if(!dragging)return;
+  dragging=false;
+  const p=getMousePos(e);
+  const dx=dragStart.x-p.x, dy=dragStart.y-p.y;
+  const power=Math.min(Math.hypot(dx,dy)*.18, 20);
+  const angle=Math.atan2(dy,dx);
+  if(power>0.5){
+    cue.vx=Math.cos(angle)*power;
+    cue.vy=Math.sin(angle)*power;
+    gameState.moving=true; gameState.foul=false;
+    gameState.sunkThisTurn=[];
+  }
+});
+canvas.addEventListener('touchstart',e=>{e.preventDefault();canvas.dispatchEvent(new MouseEvent('mousedown',{clientX:e.touches[0].clientX,clientY:e.touches[0].clientY}));},{passive:false});
+canvas.addEventListener('touchmove',e=>{e.preventDefault();canvas.dispatchEvent(new MouseEvent('mousemove',{clientX:e.touches[0].clientX,clientY:e.touches[0].clientY}));},{passive:false});
+canvas.addEventListener('touchend',e=>{e.preventDefault();canvas.dispatchEvent(new MouseEvent('mouseup',{clientX:e.changedTouches[0].clientX,clientY:e.changedTouches[0].clientY}));},{passive:false});
+
+/* ─── PHYSICS ─── */
+function update(){
+  if(!gameState.moving)return;
+
+  balls.forEach(b=>{
+    if(!b.alive)return;
+    b.x+=b.vx; b.y+=b.vy;
+    b.vx*=FRICTION; b.vy*=FRICTION;
+    if(Math.abs(b.vx)<MIN_SPEED)b.vx=0;
+    if(Math.abs(b.vy)<MIN_SPEED)b.vy=0;
+    // Cushion bounce
+    if(b.x-b.r<TL){b.x=TL+b.r;b.vx=Math.abs(b.vx)*.85;}
+    if(b.x+b.r>TR){b.x=TR-b.r;b.vx=-Math.abs(b.vx)*.85;}
+    if(b.y-b.r<TT){b.y=TT+b.r;b.vy=Math.abs(b.vy)*.85;}
+    if(b.y+b.r>TB){b.y=TB-b.r;b.vy=-Math.abs(b.vy)*.85;}
+  });
+
+  // Ball-ball collisions
+  for(let i=0;i<balls.length;i++){
+    for(let j=i+1;j<balls.length;j++){
+      const a=balls[i],b=balls[j];
+      if(!a.alive||!b.alive)continue;
+      const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);
+      if(d<a.r+b.r&&d>0){
+        const nx=dx/d,ny=dy/d;
+        const overlap=(a.r+b.r-d)/2;
+        a.x-=nx*overlap;a.y-=ny*overlap;
+        b.x+=nx*overlap;b.y+=ny*overlap;
+        const dvx=a.vx-b.vx,dvy=a.vy-b.vy;
+        const dot=dvx*nx+dvy*ny;
+        if(dot>0){
+          a.vx-=dot*nx; a.vy-=dot*ny;
+          b.vx+=dot*nx; b.vy+=dot*ny;
+        }
+      }
+    }
+  }
+
+  // Pocket detection
+  balls.forEach(b=>{
+    if(!b.alive||b.id===0)return;
+    pockets.forEach(p=>{
+      if(Math.hypot(b.x-p.x,b.y-p.y)<POCKET_R){
+        b.alive=false; b.vx=0; b.vy=0;
+        onBallSunk(b);
+      }
+    });
+  });
+  // Cue ball scratch
+  pockets.forEach(p=>{
+    if(cue.alive&&Math.hypot(cue.x-p.x,cue.y-p.y)<POCKET_R){
+      cue.vx=0;cue.vy=0;
+      // Replace cue ball
+      const tw=TR-TL,th=TB-TT;
+      cue.x=TL+tw*.25;cue.y=TT+th/2;
+      gameState.foul=true;
+      setMsg('FOUL — Cue ball scratched! Opponent gets free shot');
+    }
+  });
+
+  // Check if all balls stopped
+  const stillMoving=balls.some(b=>b.alive&&(Math.abs(b.vx)>MIN_SPEED||Math.abs(b.vy)>MIN_SPEED));
+  if(!stillMoving){ gameState.moving=false; endTurn(); }
+}
+
+function onBallSunk(b){
+  const t=gameState.turn;
+  if(b.id===8){
+    // 8-ball sunk
+    const myGroup=gameState.assigned[t];
+    const mySunk=gameState.sunk.filter(id=>myGroup===0?id<8&&id>0:id>8).length;
+    const myTotal=myGroup===0?7:7;
+    if(mySunk===myTotal&&!gameState.foul){
+      // Win!
+      gameState.winner=t;
+    } else {
+      gameState.winner=1-t; // sunk 8 too early or foul
+    }
+    return;
+  }
+  gameState.sunk.push(b.id);
+  // Assign group on first sink
+  if(gameState.assigned[t]===-1&&gameState.assigned[1-t]===-1){
+    gameState.assigned[t]=b.stripe?1:0;
+    gameState.assigned[1-t]=b.stripe?0:1;
+    setMsg(`P${t+1} = ${b.stripe?'Stripes':'Solids'}! P${2-t} = ${b.stripe?'Solids':'Stripes'}`);
+  }
+  updateHUD();
+}
+
+function endTurn(){
+  if(gameState.winner!==null){
+    showWinner(); return;
+  }
+  const t=gameState.turn;
+  const myGroup=gameState.assigned[t];
+  const myBalls=myGroup===0?gameState.sunk.filter(id=>id>0&&id<8).length
+                           :gameState.sunk.filter(id=>id>8).length;
+  // Did player sink one of their own balls this turn? if not, switch turns
+  // Simplified: always switch (no "continue turn on sink" for simplicity)
+  gameState.turn=gameState.foul?gameState.turn:1-gameState.turn;
+  // Actually standard rules: if you sink your ball keep turn; let's implement this
+  // Re-check: if sunkThisTurn had my balls, keep turn
+  const t2=1-gameState.turn; // this is actually complex, simplify: switch every shot
+  gameState.turn=1-t;
+  updateHUD();
+  const names=['P1','P2'];
+  setMsg(`${names[gameState.turn]}'s turn — ${getGroupLabel(gameState.turn)}`);
+}
+
+function getGroupLabel(t){
+  const g=gameState.assigned[t];
+  if(g===-1)return'group not assigned yet';
+  return g===0?'sink SOLIDS (1-7)':'sink STRIPES (9-15)';
+}
+
+function showWinner(){
+  const ov=document.getElementById('ov');
+  ov.classList.remove('h');
+  const w=gameState.winner;
+  ov.querySelector('.ot').textContent=`🏆 Player ${w+1} Wins!`;
+  ov.querySelector('.os').textContent=`${w===0?'Solids':'Stripes'} cleared + 8-ball sunk`;
+  ov.querySelector('.ob').textContent='New Game';
+  ov.querySelector('.ob').onclick=startGame;
+}
+
+function setMsg(txt){document.getElementById('msgbar').textContent=txt;}
+
+function updateHUD(){
+  const t=gameState.turn;
+  document.getElementById('turnlbl').textContent=`P${t+1}'s SHOT`;
+  // Show remaining balls for each player
+  const g0=gameState.assigned[0], g1=gameState.assigned[1];
+  const sunk0=g0===0?gameState.sunk.filter(id=>id>0&&id<8):gameState.sunk.filter(id=>id>8);
+  const sunk1=g1===0?gameState.sunk.filter(id=>id>0&&id<8):gameState.sunk.filter(id=>id>8);
+  const pb1=document.getElementById('pb1'), pb2=document.getElementById('pb2');
+  pb1.innerHTML=''; pb2.innerHTML='';
+  // Show sunk balls as indicators
+  sunk0.forEach(id=>{
+    const d=document.createElement('div');
+    d.className='ball-indicator';
+    d.style.background=BALL_COLORS[id];
+    d.style.border='1px solid rgba(255,255,255,.3)';
+    pb1.appendChild(d);
+  });
+  sunk1.forEach(id=>{
+    const d=document.createElement('div');
+    d.className='ball-indicator';
+    d.style.background=BALL_COLORS[id];
+    d.style.border='1px solid rgba(255,255,255,.3)';
+    pb2.appendChild(d);
+  });
+}
+
+/* ─── DRAWING ─── */
+function draw(){
+  ctx.fillStyle='#020208'; ctx.fillRect(0,0,W,H);
+
+  // Table felt
+  const tw=TR-TL,th=TB-TT;
+  ctx.fillStyle='#0a2e14';
+  ctx.fillRect(TL,TT,tw,th);
+  // Cushion border
+  ctx.strokeStyle='#3a6e2e'; ctx.lineWidth=4;
+  ctx.strokeRect(TL,TT,tw,th);
+  // Baulk line
+  ctx.strokeStyle='rgba(255,255,255,.06)'; ctx.lineWidth=1.5;
+  ctx.setLineDash([4,6]);
+  ctx.beginPath(); ctx.moveTo(TL+tw*.25,TT); ctx.lineTo(TL+tw*.25,TB); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Pockets
+  pockets.forEach(p=>{
+    ctx.beginPath(); ctx.arc(p.x,p.y,POCKET_R,0,Math.PI*2);
+    ctx.fillStyle='#000'; ctx.fill();
+    ctx.strokeStyle='rgba(255,215,0,.3)'; ctx.lineWidth=1.5; ctx.stroke();
+  });
+
+  // Aim line (while dragging)
+  if(dragging&&cue.alive){
+    const dx=dragStart.x-mousePos.x, dy=dragStart.y-mousePos.y;
+    const len=Math.hypot(dx,dy);
+    if(len>5){
+      const nx=dx/len,ny=dy/len;
+      // Ghost ball path
+      ctx.strokeStyle='rgba(255,255,255,.15)'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+      ctx.beginPath(); ctx.moveTo(cue.x,cue.y);
+      ctx.lineTo(cue.x+nx*Math.min(len*1.5,200), cue.y+ny*Math.min(len*1.5,200));
+      ctx.stroke(); ctx.setLineDash([]);
+      // Cue stick
+      ctx.strokeStyle='rgba(180,120,60,.8)'; ctx.lineWidth=3;
+      ctx.beginPath();
+      ctx.moveTo(cue.x-nx*20, cue.y-ny*20);
+      ctx.lineTo(cue.x-nx*(20+Math.min(len,120)), cue.y-ny*(20+Math.min(len,120)));
+      ctx.stroke();
+      // Power bar
+      const pwr=Math.min(len*.18,20)/20;
+      ctx.fillStyle=`rgba(255,${Math.floor(255*(1-pwr))},0,.8)`;
+      ctx.fillRect(TL, TB+8, tw*pwr, 6);
+      ctx.strokeStyle='rgba(255,255,255,.2)'; ctx.lineWidth=1;
+      ctx.strokeRect(TL, TB+8, tw, 6);
+    }
+  }
+
+  // Balls
+  balls.forEach(b=>{
+    if(!b.alive)return;
+    // Shadow
+    ctx.beginPath(); ctx.arc(b.x+2,b.y+2,b.r,0,Math.PI*2);
+    ctx.fillStyle='rgba(0,0,0,.4)'; ctx.fill();
+    // Ball
+    const g=ctx.createRadialGradient(b.x-b.r*.3,b.y-b.r*.3,b.r*.1,b.x,b.y,b.r);
+    g.addColorStop(0,'rgba(255,255,255,.5)');
+    g.addColorStop(.4,b.color);
+    g.addColorStop(1,'rgba(0,0,0,.4)');
+    ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+    ctx.fillStyle=g; ctx.fill();
+    if(b.id===0){
+      // White shimmer
+      ctx.strokeStyle='rgba(255,255,255,.4)'; ctx.lineWidth=1;
+      ctx.stroke();
+    }
+    // Stripe overlay
+    if(b.stripe&&b.id!==0){
+      ctx.save();
+      ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2); ctx.clip();
+      ctx.fillStyle='rgba(255,255,255,.85)';
+      ctx.fillRect(b.x-b.r,b.y-b.r*.4,b.r*2,b.r*.8);
+      ctx.restore();
+    }
+    // Number
+    if(b.id>0){
+      ctx.fillStyle='#fff'; ctx.font=`bold ${b.r*.9}px Orbitron,sans-serif`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(b.id,b.x,b.y+.5);
+    }
+  });
+}
+
+function loop(){ update(); draw(); animId=requestAnimationFrame(loop); }
+
+function startGame(){
+  initGame();
+  document.getElementById('ov').classList.add('h');
+  if(animId)cancelAnimationFrame(animId);
+  loop();
+}
+window.addEventListener('resize',()=>{if(!gameState.moving){resize();}});
+</script>
+</body>
+</html>

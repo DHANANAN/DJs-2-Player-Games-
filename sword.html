@@ -17,6 +17,9 @@ body::before{content:'';position:fixed;inset:0;z-index:999;
 .back{font-family:'Orbitron',sans-serif;font-size:.6rem;font-weight:700;color:var(--dim);
   text-decoration:none;border:1px solid var(--dim);padding:.45rem .9rem;letter-spacing:.1em;transition:all .3s;}
 .back:hover{color:var(--cyan);border-color:var(--cyan);}
+.mode-row{display:flex;gap:.5rem;margin-bottom:.7rem;}
+.mode-btn{font-family:'Orbitron',sans-serif;font-size:.55rem;font-weight:700;letter-spacing:.12em;padding:.45rem .9rem;background:transparent;color:var(--dim);border:1px solid var(--dim);cursor:pointer;}
+.mode-btn.active{background:var(--red);color:var(--bg);border-color:var(--red);}
 .title{font-family:'Press Start 2P',monospace;font-size:.85rem;color:var(--red);
   text-shadow:0 0 18px rgba(255,68,85,.7);}
 .health-bar-row{width:100%;max-width:700px;display:grid;grid-template-columns:1fr auto 1fr;
@@ -59,10 +62,14 @@ canvas{display:block;width:100%;}
 </head>
 <body>
 <nav class="nav">
-  <a href="../index.html" class="back">← Hub</a>
+  <a href="index.html" class="back">← Hub</a>
   <span class="title">Sword Duels</span>
   <span style="width:70px"></span>
 </nav>
+<div class="mode-row">
+  <button class="mode-btn active" id="m2p" onclick="setMode('2p')">👥 2 Player</button>
+  <button class="mode-btn" id="mai" onclick="setMode('ai')">🤖 vs AI</button>
+</div>
 
 <div class="health-bar-row">
   <div class="hp-block">
@@ -88,12 +95,7 @@ canvas{display:block;width:100%;}
   <div class="ov" id="ov">
     <div class="ot">⚔️ SWORD DUEL</div>
     <div class="os">Best of 3 rounds<br>Move · Jump · Attack · Block<br>Drain opponent's HP to win</div>
-    <button class="ob" onclick="startGame()">FIGHT!</button>
-  </div>
-</div>
-
-<div class="ctrl">
-  <div class="cb"><h4>// Player 1 (Cyan)</h4>
+@@ -97,92 +104,109 @@ canvas{display:block;width:100%;}
     <p><span class="k">A</span>/<span class="k">D</span> Move · <span class="k">W</span> Jump<br>
        <span class="k">F</span> Attack · <span class="k">G</span> Block</p></div>
   <div class="cb"><h4>// Player 2 (Pink)</h4>
@@ -119,6 +121,7 @@ const MOVE_SPD=3.2, JUMP_F=-11, GRAV=.45, ATK_DMG=12, BLK_DMG=2.5;
 const ATK_COOLDOWN=35, HURT_TIME=18, ATK_ANIM=22;
 
 let f1,f2,rounds=[0,0],roundNum=1,animId=null,running=false;
+let mode='2p';
 let hurtFlash=0;
 let bgParticles=[];
 
@@ -161,6 +164,22 @@ window.addEventListener('keyup',e=>{keys[e.key]=false;
   if(e.key.length===1)keys[e.key.toLowerCase()]=false;
 });
 
+function setMode(next){
+  mode=next;
+  document.getElementById('m2p').classList.toggle('active',mode==='2p');
+  document.getElementById('mai').classList.toggle('active',mode==='ai');
+}
+
+function applyAI(){
+  if(mode!=='ai'||!f1||!f2) return;
+  const dx=f1.x-f2.x;
+  keys['ArrowLeft']=dx< -35;
+  keys['ArrowRight']=dx>35;
+  keys['ArrowUp']=Math.random()<0.01;
+  keys['k']=Math.abs(dx)<75 && Math.random()<0.2;
+  keys['l']=Math.abs(dx)<65 && Math.random()<0.15;
+}
+
 function updateFighter(f,opp){
   if(!f.alive||!running)return;
   const k=f.k;
@@ -186,190 +205,7 @@ function updateFighter(f,opp){
       const dmg=opp.blockActive?BLK_DMG:ATK_DMG;
       opp.hp=Math.max(0,opp.hp-dmg);
       if(!opp.blockActive){ opp.hurtTimer=HURT_TIME; opp.state='hurt'; }
-      opp.vx+=(f.facingRight?1.5:-1.5);
-      hurtFlash=6;
-      updateHPDisplay();
-      if(opp.hp<=0){ endRound(); return; }
-    }
-  }
-
-  // Movement (only if not attacking with full swing)
-  if(f.atkSwing<ATK_ANIM*.6){
-    if(keys[k.left]){ f.vx=-MOVE_SPD; f.facingRight=false; f.state='run'; }
-    else if(keys[k.right]){ f.vx=MOVE_SPD; f.facingRight=true; f.state='run'; }
-    else{ f.vx*=.75; if(Math.abs(f.vx)<.2){ f.vx=0; f.state=f.atkTimer>0?'attack':'idle'; } }
-  }
-
-  // Jump
-  const onGround=f.y>=GROUND;
-  if(keys[k.jump]&&onGround){ f.vy=JUMP_F; f.state='jump'; }
-
-  // Physics
-  f.vy+=GRAV;
-  f.y+=f.vy;
-  f.x+=f.vx;
-  if(f.y>=GROUND){ f.y=GROUND; f.vy=0; if(f.state==='jump')f.state='idle'; }
-
-  // Boundaries
-  f.x=Math.max(f.w/2,Math.min(W-f.w*1.5,f.x));
-
-  // Face opponent
-  if(f.atkTimer<=0&&f.hurtTimer<=0&&!keys[k.left]&&!keys[k.right]){
-    f.facingRight=opp.x>f.x;
-  }
-}
-
-function endRound(){
-  running=false;
-  const winner=f1.hp>f2.hp?0:1;
-  rounds[winner]++;
-  updateLives();
-  setTimeout(()=>{
-    roundNum++;
-    if(rounds[0]>=2||rounds[1]>=2){ endMatch(); }
-    else{
-      initRound();
-      running=true;
-      document.getElementById('roundLbl').textContent=`Round ${roundNum}`;
-    }
-  },1500);
-}
-
-function endMatch(){
-  cancelAnimationFrame(animId);
-  const w=rounds[0]>=2?0:1;
-  const ov=document.getElementById('ov');
-  ov.classList.remove('h');
-  ov.querySelector('.ot').textContent=`🏆 Player ${w+1} Wins!`;
-  ov.querySelector('.os').textContent=`${rounds[0]}-${rounds[1]} rounds`;
-  ov.querySelector('.ob').textContent='Fight Again';
-  ov.querySelector('.ob').onclick=startGame;
-}
-
-function updateHPDisplay(){
-  const h1=Math.max(0,f1.hp), h2=Math.max(0,f2.hp);
-  document.getElementById('hp1').style.width=h1+'%';
-  document.getElementById('hp2').style.width=h2+'%';
-  document.getElementById('hv1').textContent=Math.ceil(h1)+' HP';
-  document.getElementById('hv2').textContent=Math.ceil(h2)+' HP';
-  if(h1<30)document.getElementById('hp1').style.background='linear-gradient(90deg,#ff4455,#ff6600)';
-  if(h2<30)document.getElementById('hp2').style.background='linear-gradient(90deg,#ff4455,#ff6600)';
-}
-
-function updateLives(){
-  const mk=(wins,el)=>{
-    el.innerHTML='';
-    for(let i=0;i<3;i++){
-      const d=document.createElement('div');
-      d.className='life-dot';
-      d.style.background=i<wins?'#ffd700':'rgba(255,255,255,.15)';
-      d.style.border='1px solid rgba(255,215,0,.4)';
-      el.appendChild(d);
-    }
-  };
-  mk(rounds[0],document.getElementById('lives1'));
-  mk(rounds[1],document.getElementById('lives2'));
-}
-
-/* ─── DRAWING ─── */
-function drawBg(){
-  const g=ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0,'#060010'); g.addColorStop(.7,'#100510'); g.addColorStop(1,'#0a0008');
-  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-  // Particles
-  bgParticles.forEach(p=>{
-    p.a+=p.s; if(p.a>0.4)p.s*=-1; if(p.a<0)p.s*=-1;
-    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-    ctx.fillStyle=`rgba(255,68,85,${p.a})`; ctx.fill();
-  });
-  // Ground
-  const gnd=ctx.createLinearGradient(0,GROUND,0,H);
-  gnd.addColorStop(0,'#1a0a2a'); gnd.addColorStop(1,'#0d0618');
-  ctx.fillStyle=gnd; ctx.fillRect(0,GROUND,W,H-GROUND+2);
-  ctx.strokeStyle='rgba(255,68,85,.4)'; ctx.lineWidth=2;
-  ctx.beginPath(); ctx.moveTo(0,GROUND); ctx.lineTo(W,GROUND); ctx.stroke();
-  // Glow on ground
-  ctx.strokeStyle='rgba(255,68,85,.1)'; ctx.lineWidth=8;
-  ctx.beginPath(); ctx.moveTo(0,GROUND); ctx.lineTo(W,GROUND); ctx.stroke();
-}
-
-function drawFighter(f){
-  const {x,y,w,h,facingRight,col,glow,state,atkSwing,blockActive,hurtTimer}=f;
-  const dir=facingRight?1:-1;
-  ctx.save();
-  ctx.translate(x+w/2, y);
-  if(!facingRight) ctx.scale(-1,1);
-
-  // Shadow
-  ctx.fillStyle='rgba(0,0,0,.35)';
-  ctx.beginPath(); ctx.ellipse(0,2,w*.6,8,0,0,Math.PI*2); ctx.fill();
-
-  const flash=hurtTimer>0&&Math.floor(hurtTimer/3)%2===0;
-  const col2=flash?'rgba(255,100,100,.9)':col;
-
-  ctx.shadowColor=glow; ctx.shadowBlur=hurtTimer>0?0:12;
-
-  // Legs
-  const legAnim=state==='run'?Math.sin(Date.now()*.015)*10:0;
-  ctx.fillStyle=flash?'#cc4444':'#222';
-  ctx.fillRect(-w/2+2, -h*.45+legAnim, w*.4, h*.42);
-  ctx.fillRect(w*.05, -h*.45-legAnim, w*.4, h*.42);
-
-  // Body
-  ctx.fillStyle=col2; ctx.fillRect(-w/2,-h*.85,w,h*.45);
-
-  // Cape / scarf effect
-  ctx.fillStyle=`rgba(${col==='#00f5ff'?'0,180,255':'255,0,120'},.4)`;
-  ctx.beginPath(); ctx.moveTo(-w/2,-h*.85); ctx.lineTo(-w/2-8,-h*.65); ctx.lineTo(-w/2,-h*.55); ctx.fill();
-
-  // Head
-  ctx.fillStyle='#d4a57a';
-  ctx.beginPath(); ctx.arc(0,-h*.9,w*.32,0,Math.PI*2); ctx.fill();
-  // Hair
-  ctx.fillStyle=col2;
-  ctx.fillRect(-w*.3,-h-10,w*.6,8);
-  // Eye
-  ctx.fillStyle='#fff';
-  ctx.fillRect(w*.1,-h*.92,5,4);
-  ctx.fillStyle=flash?'#f00':'#111';
-  ctx.fillRect(w*.14,-h*.92,3,3);
-
-  // Sword
-  const swingAng=atkSwing>0?(atkSwing/ATK_ANIM)*1.4-0.2:0;
-  ctx.save();
-  ctx.translate(w*.5,-h*.7);
-  ctx.rotate(-Math.PI/6+swingAng);
-  // Handle
-  ctx.fillStyle='#8b6914'; ctx.fillRect(-3,0,6,12);
-  // Guard
-  ctx.fillStyle='#aaa'; ctx.fillRect(-8,-2,16,4);
-  // Blade
-  ctx.fillStyle='rgba(200,230,255,.9)';
-  ctx.shadowColor='rgba(180,220,255,.8)'; ctx.shadowBlur=atkSwing>0?12:4;
-  ctx.fillRect(-2,-36,4,36);
-  // Glint
-  if(atkSwing>ATK_ANIM*.5){
-    ctx.fillStyle='rgba(255,255,255,.8)';
-    ctx.fillRect(-1,-36,2,8);
-  }
-  ctx.restore();
-
-  // Block shield
-  if(blockActive){
-    ctx.shadowColor='rgba(255,215,0,.8)'; ctx.shadowBlur=15;
-    ctx.strokeStyle='rgba(255,215,0,.7)'; ctx.lineWidth=3;
-    ctx.beginPath(); ctx.arc(w*.3,-h*.6,w*.5,-.8,.8); ctx.stroke();
-  }
-
-  ctx.shadowBlur=0;
-  ctx.restore();
-
-  // Attack flash
-  if(atkSwing>ATK_ANIM*.5){
-    ctx.strokeStyle=col;
-    ctx.globalAlpha=atkSwing/ATK_ANIM*.5;
-    ctx.lineWidth=2;
-    ctx.beginPath();
+@@ -373,46 +397,47 @@ function drawFighter(f){
     const ax=x+w/2+(facingRight?w*.5:-w*.5);
     ctx.arc(ax,y-h*.7,40,facingRight?-.7:.4,(facingRight?-.7:.4)+1.2);
     ctx.stroke();
@@ -395,6 +231,7 @@ function draw(){
 }
 
 function loop(){
+  applyAI();
   updateFighter(f1,f2);
   updateFighter(f2,f1);
   draw();

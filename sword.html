@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Sword Duels — DJ's Games Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#04040d;--cyan:#00f5ff;--magenta:#ff00aa;--gold:#ffd700;--green:#00ff88;
+  --red:#ff4455;--panel:rgba(0,245,255,.04);--border:rgba(0,245,255,.18);--text:#c8d8ff;--dim:#5a6a8a;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding:1.2rem 1rem;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;z-index:999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;}
+.nav{width:100%;max-width:700px;display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;}
+.back{font-family:'Orbitron',sans-serif;font-size:.6rem;font-weight:700;color:var(--dim);
+  text-decoration:none;border:1px solid var(--dim);padding:.45rem .9rem;letter-spacing:.1em;transition:all .3s;}
+.back:hover{color:var(--cyan);border-color:var(--cyan);}
+.mode-row{display:flex;gap:.5rem;margin-bottom:.7rem;}
+.mode-btn{font-family:'Orbitron',sans-serif;font-size:.55rem;font-weight:700;letter-spacing:.12em;padding:.45rem .9rem;background:transparent;color:var(--dim);border:1px solid var(--dim);cursor:pointer;}
+.mode-btn.active{background:var(--red);color:var(--bg);border-color:var(--red);}
+.title{font-family:'Press Start 2P',monospace;font-size:.85rem;color:var(--red);
+  text-shadow:0 0 18px rgba(255,68,85,.7);}
+.health-bar-row{width:100%;max-width:700px;display:grid;grid-template-columns:1fr auto 1fr;
+  gap:.5rem;margin-bottom:.8rem;align-items:center;}
+.hp-block{display:flex;flex-direction:column;gap:.3rem;}
+.hp-block.right{align-items:flex-end;}
+.hp-name{font-family:'Orbitron',sans-serif;font-size:.6rem;font-weight:700;letter-spacing:.1em;}
+.hp-name.p1{color:var(--cyan);}
+.hp-name.p2{color:var(--magenta);}
+.hp-bar-wrap{width:100%;height:18px;background:rgba(255,255,255,.06);border:1px solid var(--border);position:relative;}
+.hp-bar{height:100%;transition:width .1s;}
+.hp-bar.p1{background:linear-gradient(90deg,#00f5ff,#00aaff);}
+.hp-bar.p2{background:linear-gradient(90deg,#ff00aa,#ff4488);}
+.hp-val{font-family:'Orbitron',sans-serif;font-size:.55rem;color:var(--dim);}
+.vs-block{text-align:center;}
+.round-lbl{font-family:'Press Start 2P',monospace;font-size:.55rem;color:var(--gold);}
+.lives-row{display:flex;gap:3px;justify-content:center;margin-top:.3rem;}
+.life-dot{width:8px;height:8px;border-radius:50%;}
+.cw{position:relative;width:min(700px,96vw);border:1px solid var(--border);
+  background:#020208;margin-bottom:.8rem;overflow:hidden;}
+.cw::before{content:'';position:absolute;inset:-2px;
+  background:linear-gradient(135deg,var(--red),var(--magenta));z-index:-1;opacity:.5;}
+canvas{display:block;width:100%;}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;background:rgba(4,4,13,.9);z-index:10;}
+.ov.h{display:none;}
+.ot{font-family:'Press Start 2P',monospace;font-size:clamp(.85rem,3.5vw,1.5rem);
+  color:var(--gold);text-shadow:0 0 28px rgba(255,215,0,.7);text-align:center;margin-bottom:.6rem;}
+.os{font-family:'Orbitron',sans-serif;font-size:.55rem;color:var(--dim);letter-spacing:.1em;margin-bottom:1.3rem;text-align:center;line-height:2;}
+.ob{font-family:'Orbitron',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.2em;
+  padding:.8rem 2rem;background:var(--red);color:#fff;border:none;cursor:pointer;transition:all .25s;}
+.ob:hover{background:#fff;color:var(--bg);}
+.ctrl{width:100%;max-width:700px;display:grid;grid-template-columns:1fr 1fr;gap:.8rem;}
+.cb{border:1px solid var(--border);background:var(--panel);padding:.8rem 1rem;}
+.cb h4{font-family:'Orbitron',sans-serif;font-size:.55rem;color:var(--cyan);letter-spacing:.15em;margin-bottom:.5rem;}
+.cb p{font-size:.8rem;color:var(--dim);line-height:1.8;}
+.k{display:inline-block;font-family:'Orbitron',sans-serif;font-size:.5rem;
+  padding:.1rem .35rem;border:1px solid var(--border);color:var(--text);background:rgba(255,255,255,.05);}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a href="index.html" class="back">← Hub</a>
+  <span class="title">Sword Duels</span>
+  <span style="width:70px"></span>
+</nav>
+<div class="mode-row">
+  <button class="mode-btn active" id="m2p" onclick="setMode('2p')">👥 2 Player</button>
+  <button class="mode-btn" id="mai" onclick="setMode('ai')">🤖 vs AI</button>
+</div>
+
+<div class="health-bar-row">
+  <div class="hp-block">
+    <div class="hp-name p1">PLAYER 1</div>
+    <div class="hp-bar-wrap"><div class="hp-bar p1" id="hp1" style="width:100%"></div></div>
+    <div class="hp-val" id="hv1">100 HP</div>
+  </div>
+  <div class="vs-block">
+    <div class="round-lbl" id="roundLbl">Round 1</div>
+    <div class="lives-row" id="lives1"></div>
+    <div style="font-family:'Orbitron',sans-serif;font-size:.5rem;color:var(--dim);margin:.15rem 0">VS</div>
+    <div class="lives-row" id="lives2"></div>
+  </div>
+  <div class="hp-block right">
+    <div class="hp-name p2">PLAYER 2</div>
+    <div class="hp-bar-wrap"><div class="hp-bar p2" id="hp2" style="width:100%"></div></div>
+    <div class="hp-val" id="hv2">100 HP</div>
+  </div>
+</div>
+
+<div class="cw">
+  <canvas id="c" height="420"></canvas>
+  <div class="ov" id="ov">
+    <div class="ot">⚔️ SWORD DUEL</div>
+    <div class="os">Best of 3 rounds<br>Move · Jump · Attack · Block<br>Drain opponent's HP to win</div>
+@@ -97,92 +104,109 @@ canvas{display:block;width:100%;}
+    <p><span class="k">A</span>/<span class="k">D</span> Move · <span class="k">W</span> Jump<br>
+       <span class="k">F</span> Attack · <span class="k">G</span> Block</p></div>
+  <div class="cb"><h4>// Player 2 (Pink)</h4>
+    <p><span class="k">←</span>/<span class="k">→</span> Move · <span class="k">↑</span> Jump<br>
+       <span class="k">K</span> Attack · <span class="k">L</span> Block</p></div>
+</div>
+
+<script>
+/* ─── SWORD DUEL ENGINE ──────────────────────────────────
+   Side-scrolling 2D fighter.
+   Each fighter has: position, velocity, HP, state.
+   States: idle, run, jump, attack, block, hurt, dead
+   Attack hitbox extends in facing direction.
+   Blocking reduces damage by 80%.
+   Best of 3 rounds.
+────────────────────────────────────────────────────────── */
+const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
+let W,H,GROUND;
+const keys={};
+
+const MAX_HP=100;
+const MOVE_SPD=3.2, JUMP_F=-11, GRAV=.45, ATK_DMG=12, BLK_DMG=2.5;
+const ATK_COOLDOWN=35, HURT_TIME=18, ATK_ANIM=22;
+
+let f1,f2,rounds=[0,0],roundNum=1,animId=null,running=false;
+let mode='2p';
+let hurtFlash=0;
+let bgParticles=[];
+
+function resize(){
+  W=canvas.offsetWidth; H=420;
+  canvas.width=W; canvas.height=H;
+  GROUND=H*.78;
+}
+
+function mkFighter(x,facingRight,col,glow,keys_){
+  return{x,y:GROUND,vx:0,vy:0,w:28,h:60,
+    hp:MAX_HP,alive:true,facingRight,
+    state:'idle',atkTimer:0,hurtTimer:0,blockActive:false,
+    col,glow,
+    k:keys_, // control keys
+    atkSwing:0 // for sword animation
+  };
+}
+
+function initRound(){
+  f1=mkFighter(W*.2,true,'#00f5ff','rgba(0,245,255,.6)',{left:'a',right:'d',jump:'w',atk:'f',blk:'g'});
+  f2=mkFighter(W*.8,false,'#ff00aa','rgba(255,0,170,.6)',{left:'ArrowLeft',right:'ArrowRight',jump:'ArrowUp',atk:'k',blk:'l'});
+  hurtFlash=0;
+  initBgParticles();
+}
+
+function initBgParticles(){
+  bgParticles=Array.from({length:30},()=>({
+    x:Math.random()*W,y:Math.random()*H*.7,
+    r:Math.random()*1.5+.3, a:Math.random()*.4, s:Math.random()*.003+.001
+  }));
+}
+
+window.addEventListener('keydown',e=>{keys[e.key]=true;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();
+  // Map uppercase
+  if(e.key.length===1)keys[e.key.toLowerCase()]=true;
+});
+window.addEventListener('keyup',e=>{keys[e.key]=false;
+  if(e.key.length===1)keys[e.key.toLowerCase()]=false;
+});
+
+function setMode(next){
+  mode=next;
+  document.getElementById('m2p').classList.toggle('active',mode==='2p');
+  document.getElementById('mai').classList.toggle('active',mode==='ai');
+}
+
+function applyAI(){
+  if(mode!=='ai'||!f1||!f2) return;
+  const dx=f1.x-f2.x;
+  keys['ArrowLeft']=dx< -35;
+  keys['ArrowRight']=dx>35;
+  keys['ArrowUp']=Math.random()<0.01;
+  keys['k']=Math.abs(dx)<75 && Math.random()<0.2;
+  keys['l']=Math.abs(dx)<65 && Math.random()<0.15;
+}
+
+function updateFighter(f,opp){
+  if(!f.alive||!running)return;
+  const k=f.k;
+
+  // Timers
+  if(f.atkTimer>0)f.atkTimer--;
+  if(f.hurtTimer>0){ f.hurtTimer--; return; } // can't act while hurt
+  f.atkSwing=Math.max(0,f.atkSwing-1);
+
+  // Block
+  f.blockActive=keys[k.blk]&&f.atkTimer<=0;
+
+  // Attack
+  if(keys[k.atk]&&f.atkTimer<=0){
+    f.atkTimer=ATK_COOLDOWN;
+    f.atkSwing=ATK_ANIM;
+    f.state='attack';
+    // Hitbox check
+    const hitX=f.x+(f.facingRight?f.w+5:-45);
+    const hitRange=50;
+    if(Math.abs((hitX+hitRange/2)-(opp.x+opp.w/2))<hitRange+opp.w/2 &&
+       Math.abs(f.y-opp.y)<f.h*.8){
+      const dmg=opp.blockActive?BLK_DMG:ATK_DMG;
+      opp.hp=Math.max(0,opp.hp-dmg);
+      if(!opp.blockActive){ opp.hurtTimer=HURT_TIME; opp.state='hurt'; }
+@@ -373,46 +397,47 @@ function drawFighter(f){
+    const ax=x+w/2+(facingRight?w*.5:-w*.5);
+    ctx.arc(ax,y-h*.7,40,facingRight?-.7:.4,(facingRight?-.7:.4)+1.2);
+    ctx.stroke();
+    ctx.globalAlpha=1;
+  }
+}
+
+function drawHurtFlash(){
+  if(hurtFlash>0){
+    ctx.fillStyle=`rgba(255,68,85,${hurtFlash*.04})`;
+    ctx.fillRect(0,0,W,H);
+    hurtFlash--;
+  }
+}
+
+function draw(){
+  ctx.fillStyle='#020208'; ctx.fillRect(0,0,W,H);
+  drawBg();
+  drawFighter(f1); drawFighter(f2);
+  drawHurtFlash();
+  // HP update each frame for smooth animation
+  if(running) updateHPDisplay();
+}
+
+function loop(){
+  applyAI();
+  updateFighter(f1,f2);
+  updateFighter(f2,f1);
+  draw();
+  animId=requestAnimationFrame(loop);
+}
+
+function startGame(){
+  resize(); rounds=[0,0]; roundNum=1;
+  document.getElementById('roundLbl').textContent='Round 1';
+  document.getElementById('ov').classList.add('h');
+  initRound(); updateLives();
+  running=true;
+  document.getElementById('hp1').style.background='linear-gradient(90deg,#00f5ff,#00aaff)';
+  document.getElementById('hp2').style.background='linear-gradient(90deg,#ff00aa,#ff4488)';
+  if(animId)cancelAnimationFrame(animId);
+  loop();
+}
+window.addEventListener('resize',()=>{resize();});
+</script>
+</body>
+</html>

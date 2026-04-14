@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Basketball — DJ's Games Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#04040d;--cyan:#00f5ff;--magenta:#ff00aa;--gold:#ffd700;--orange:#ff8800;
+  --panel:rgba(0,245,255,.04);--border:rgba(0,245,255,.18);--text:#c8d8ff;--dim:#5a6a8a;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding:1.2rem 1rem;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;z-index:999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;}
+.nav{width:100%;max-width:700px;display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;}
+.back{font-family:'Orbitron',sans-serif;font-size:.6rem;font-weight:700;color:var(--dim);
+  text-decoration:none;border:1px solid var(--dim);padding:.45rem .9rem;letter-spacing:.1em;transition:all .3s;}
+.back:hover{color:var(--cyan);border-color:var(--cyan);}
+.title{font-family:'Press Start 2P',monospace;font-size:.85rem;color:var(--orange);
+  text-shadow:0 0 18px rgba(255,136,0,.6);}
+.level-badge{font-family:Orbitron,sans-serif;font-size:.5rem;color:var(--gold);}
+.scores{width:100%;max-width:700px;display:grid;grid-template-columns:1fr auto 1fr;margin-bottom:.8rem;}
+.sb{text-align:center;padding:.6rem;border:1px solid var(--border);background:var(--panel);}
+.sb+.sb{border-left:none;}
+.sn{font-family:'Orbitron',sans-serif;font-size:1.8rem;font-weight:900;}
+.sn.p1{color:var(--orange);}
+.sn.p2{color:var(--cyan);}
+.sn.mid{color:var(--dim);}
+.sl{font-family:'Orbitron',sans-serif;font-size:.5rem;color:var(--dim);letter-spacing:.12em;}
+.cw{position:relative;width:min(700px,96vw);border:1px solid var(--border);background:#001a00;margin-bottom:.8rem;}
+.cw::before{content:'';position:absolute;inset:-2px;background:linear-gradient(135deg,var(--orange),var(--cyan));z-index:-1;opacity:.4;}
+canvas{display:block;width:100%;}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,4,13,.9);z-index:10;}
+.ov.h{display:none;}
+.ot{font-family:'Press Start 2P',monospace;font-size:clamp(.85rem,3.5vw,1.5rem);color:var(--orange);text-shadow:0 0 28px rgba(255,136,0,.7);text-align:center;margin-bottom:.6rem;}
+.os{font-family:'Orbitron',sans-serif;font-size:.6rem;color:var(--dim);letter-spacing:.12em;margin-bottom:1.4rem;text-align:center;line-height:2;}
+.ob{font-family:'Orbitron',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.2em;padding:.8rem 2rem;background:var(--orange);color:var(--bg);border:none;cursor:pointer;transition:all .25s;}
+.ob:hover{background:#fff;}
+.ctrl{width:100%;max-width:700px;border:1px solid var(--border);background:var(--panel);padding:.8rem 1.2rem;font-size:.85rem;color:var(--dim);}
+</style>
+</head>
+<body>
+<nav class="nav">
+   <a href="../index.html" class="back">← Hub</a>
+   <span class="title">Basketball</span>
+   <span class="level-badge" id="lvlBadge">Lv1/10</span>
+</nav>
+<div class="scores">
+   <div class="sb"><div class="sn p1" id="yourScore">0</div><div class="sl">Your Score</div></div>
+   <div class="sb"><div class="sn mid">Time: <span id="timer">30</span>s</div><div class="sl">Game</div></div>
+   <div class="sb"><div class="sn p2" id="aiScore">0</div><div class="sl">AI Score</div></div>
+</div>
+<div class="cw">
+   <canvas id="c" height="450"></canvas>
+   <div class="ov" id="ov">
+     <div class="ot">BASKETBALL</div>
+     <div class="os">Shoot more points than AI!<br>Click & drag to aim & shoot</div>
+     <button class="ob" onclick="startGame()">SHOOT!</button>
+   </div>
+</div>
+<div class="ctrl">
+Click on the basketball, drag back to aim trajectory. Release to shoot. Make more baskets than the AI in 30 seconds! 10 difficulty levels with faster shots and smaller basket.
+</div>
+
+<script>
+const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
+let W,H;
+
+const LEVELS=[
+  {basketR:22, aiShootChance:0.08, shotSpeed:0.15},
+  {basketR:21, aiShootChance:0.12, shotSpeed:0.16},
+  {basketR:20, aiShootChance:0.14, shotSpeed:0.17},
+  {basketR:19, aiShootChance:0.16, shotSpeed:0.18},
+  {basketR:18, aiShootChance:0.18, shotSpeed:0.19},
+  {basketR:17, aiShootChance:0.20, shotSpeed:0.20},
+  {basketR:16, aiShootChance:0.22, shotSpeed:0.21},
+  {basketR:15, aiShootChance:0.24, shotSpeed:0.22},
+  {basketR:14, aiShootChance:0.26, shotSpeed:0.23},
+  {basketR:13, aiShootChance:0.28, shotSpeed:0.24}
+];
+
+let currentLevel=0;
+let ball,basket,gameRunning=false,animId=null;
+let yourScore=0,aiScore=0,timeLeft=30;
+let dragging=false,dragStart={x:0,y:0},mousePos={x:0,y:0};
+let particles=[];
+
+function resize(){
+  W=canvas.offsetWidth;
+  H=450;
+  canvas.width=W;
+  canvas.height=H;
+}
+
+function initGame(){
+  resize();
+  const level=LEVELS[currentLevel];
+  ball={x:W/2,y:H-60,vx:0,vy:0,r:8};
+  basket={x:W/2,y:H/4,r:level.basketR};
+  yourScore=0;
+  aiScore=0;
+  timeLeft=30;
+  gameRunning=true;
+}
+
+canvas.addEventListener('mousedown',e=>{
+  const r=canvas.getBoundingClientRect();
+  mousePos.x=(e.clientX-r.left)*(W/r.width);
+  mousePos.y=(e.clientY-r.top)*(H/r.height);
+  const dx=mousePos.x-ball.x,dy=mousePos.y-ball.y;
+  if(Math.hypot(dx,dy)<25){dragging=true;dragStart={x:mousePos.x,y:mousePos.y};}
+});
+canvas.addEventListener('mousemove',e=>{
+  const r=canvas.getBoundingClientRect();
+  mousePos.x=(e.clientX-r.left)*(W/r.width);
+  mousePos.y=(e.clientY-r.top)*(H/r.height);
+});
+canvas.addEventListener('mouseup',e=>{
+  if(!dragging)return;
+  dragging=false;
+  const level=LEVELS[currentLevel];
+  const dx=dragStart.x-mousePos.x,dy=dragStart.y-mousePos.y;
+  ball.vx=dx*level.shotSpeed;
+  ball.vy=dy*level.shotSpeed;
+});
+
+function tick(){
+  if(!gameRunning)return;
+  const level=LEVELS[currentLevel];
+  
+  // Physics
+  ball.vx*=0.99;
+  ball.vy*=0.99;
+  ball.vy+=0.2; // gravity
+  ball.x+=ball.vx;
+  ball.y+=ball.vy;
+  
+  // Boundaries
+  if(ball.x-ball.r<0){ball.x=ball.r;ball.vx*=-0.8;}
+  if(ball.x+ball.r>W){ball.x=W-ball.r;ball.vx*=-0.8;}
+  if(ball.y-ball.r<0){ball.y=ball.r;ball.vy*=-0.8;}
+  if(ball.y+ball.r>H){
+    ball.x=W/2;
+    ball.y=H-60;
+    ball.vx=0;
+    ball.vy=0;
+  }
+  
+  // Basket collision
+  const distToBasket=Math.hypot(ball.x-basket.x,ball.y-basket.y);
+  if(distToBasket<basket.r+ball.r&&Math.abs(ball.y-basket.y)<20){
+    yourScore+=2;
+    createScoreEffect(basket.x,basket.y,'#ff8800');
+    ball.x=W/2;
+    ball.y=H-60;
+    ball.vx=0;
+    ball.vy=0;
+  }
+  
+  // AI shoot
+  if(Math.random()<level.aiShootChance){
+    const aiX=W/4+Math.random()*W/2;
+    const aiY=H-80;
+    const shootAngle=Math.atan2(basket.y-aiY,basket.x-aiX);
+    const aiScored=Math.random()>0.4;
+    if(aiScored){
+      aiScore+=2;
+      createScoreEffect(basket.x,basket.y,'#00f5ff');
+    }
+  }
+  
+  timeLeft--;
+  document.getElementById('timer').textContent=Math.ceil(timeLeft/60);
+  document.getElementById('yourScore').textContent=yourScore;
+  document.getElementById('aiScore').textContent=aiScore;
+  
+  if(timeLeft<=0){
+    endGame();
+    return;
+  }
+  
+  particles.forEach(p=>{p.life-=0.03;});
+  particles=particles.filter(p=>p.life>0);
+  
+  draw();
+}
+
+function createScoreEffect(x,y,color){
+  for(let i=0;i<12;i++){
+    const angle=Math.random()*Math.PI*2;
+    particles.push({x,y,vx:Math.cos(angle)*5,vy:Math.sin(angle)*5,life:1,color,size:Math.random()*3+1});
+  }
+}
+
+function draw(){
+  ctx.fillStyle='#001a00';
+  ctx.fillRect(0,0,W,H);
+  
+  // Court lines
+  ctx.strokeStyle='#fff';
+  ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(W/2,0);
+  ctx.lineTo(W/2,H);
+  ctx.stroke();
+  
+  // Basket
+  ctx.strokeStyle='#ff8800';
+  ctx.lineWidth=3;
+  ctx.beginPath();
+  ctx.arc(basket.x,basket.y,basket.r,0,Math.PI*2);
+  ctx.stroke();
+  
+  // Backboard
+  ctx.fillStyle='rgba(255,255,255,.1)';
+  ctx.fillRect(basket.x-25,basket.y-40,50,40);
+  
+  // Ball
+  ctx.shadowColor='#ff8800';
+  ctx.shadowBlur=15;
+  ctx.fillStyle='#ff8800';
+  ctx.beginPath();
+  ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);
+  ctx.fill();
+  ctx.shadowBlur=0;
+  
+  // Drag preview
+  if(dragging){
+    ctx.strokeStyle='rgba(255,136,0,.5)';
+    ctx.lineWidth=2;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath();
+    ctx.moveTo(ball.x,ball.y);
+    ctx.lineTo(mousePos.x,mousePos.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  
+  // Particles
+  particles.forEach(p=>{
+    ctx.globalAlpha=p.life;
+    ctx.fillStyle=p.color;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+    ctx.fill();
+  });
+  ctx.globalAlpha=1;
+}
+
+function startGame(){
+  initGame();
+  document.getElementById('ov').classList.add('h');
+  document.getElementById('lvlBadge').textContent=`Lv${currentLevel+1}/10`;
+  clearInterval(animId);
+  animId=setInterval(tick,16);
+}
+
+function endGame(){
+  gameRunning=false;
+  clearInterval(animId);
+  const ov=document.getElementById('ov');
+  ov.classList.remove('h');
+  const won=yourScore>aiScore;
+  ov.querySelector('.ot').textContent=won?'🏀 You Win!':'🤖 AI Wins!';
+  ov.querySelector('.os').textContent=`You: ${yourScore} · AI: ${aiScore} · Level ${currentLevel+1}/10`;
+  ov.querySelector('.ob').textContent=currentLevel+1<LEVELS.length?'Next Level':'Final Victory!';
+  ov.querySelector('.ob').onclick=()=>{
+    if(currentLevel+1<LEVELS.length){
+      currentLevel++;
+      startGame();
+    }else{
+      location.href='../index.html';
+    }
+  };
+}
+
+window.addEventListener('resize',()=>{if(!gameRunning)resize();});
+resize();
+ctx.fillStyle='#001a00';
+ctx.fillRect(0,0,W,H);
+</script>
+</body>
+</html>

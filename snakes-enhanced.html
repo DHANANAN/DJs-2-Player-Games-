@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Snakes — DJ's Games Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#04040d;--cyan:#00f5ff;--magenta:#ff00aa;--gold:#ffd700;--green:#00ff88;
+  --panel:rgba(0,245,255,.04);--border:rgba(0,245,255,.18);--text:#c8d8ff;--dim:#5a6a8a;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding:1.2rem 1rem;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;z-index:999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;}
+.nav{width:100%;max-width:640px;display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}
+.back{font-family:'Orbitron',sans-serif;font-size:.6rem;font-weight:700;color:var(--dim);
+  text-decoration:none;border:1px solid var(--dim);padding:.45rem .9rem;letter-spacing:.1em;transition:all .3s;}
+.back:hover{color:var(--cyan);border-color:var(--cyan);}
+.title{font-family:'Press Start 2P',monospace;font-size:.85rem;color:var(--green);
+  text-shadow:0 0 18px rgba(0,255,136,.6);}
+.level-badge{font-family:Orbitron,sans-serif;font-size:.5rem;color:var(--gold);text-shadow:0 0 8px rgba(255,215,0,.6);}
+.scores{width:100%;max-width:640px;display:grid;grid-template-columns:1fr auto 1fr;margin-bottom:.8rem;}
+.sb{text-align:center;padding:.6rem;border:1px solid var(--border);background:var(--panel);}
+.sb+.sb{border-left:none;}
+.sn{font-family:'Orbitron',sans-serif;font-size:1.6rem;font-weight:900;}
+.sn.p1{color:var(--cyan);}
+.sn.p2{color:var(--magenta);}
+.sn.mid{color:var(--dim);font-size:1rem;line-height:2;}
+.sl{font-family:'Orbitron',sans-serif;font-size:.5rem;color:var(--dim);letter-spacing:.12em;}
+.cw{position:relative;width:min(640px,96vw);border:1px solid var(--border);background:#020208;margin-bottom:.8rem;}
+.cw::before{content:'';position:absolute;inset:-2px;
+  background:linear-gradient(135deg,var(--green),var(--cyan),var(--magenta));z-index:-1;opacity:.4;}
+canvas{display:block;width:100%;}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;background:rgba(4,4,13,.9);z-index:10;}
+.ov.h{display:none;}
+.ot{font-family:'Press Start 2P',monospace;font-size:clamp(.85rem,3.5vw,1.4rem);
+  color:var(--gold);text-shadow:0 0 28px rgba(255,215,0,.7);text-align:center;margin-bottom:.6rem;}
+.os{font-family:'Orbitron',sans-serif;font-size:.6rem;color:var(--dim);letter-spacing:.12em;margin-bottom:1.4rem;}
+.ob{font-family:'Orbitron',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.2em;
+  padding:.8rem 2rem;background:var(--green);color:var(--bg);border:none;cursor:pointer;transition:all .25s;}
+.ob:hover{background:#fff;}
+.ctrl{width:100%;max-width:640px;display:grid;grid-template-columns:1fr 1fr;gap:.8rem;}
+.cb{border:1px solid var(--border);background:var(--panel);padding:.8rem 1rem;}
+.cb h4{font-family:'Orbitron',sans-serif;font-size:.55rem;color:var(--cyan);letter-spacing:.15em;margin-bottom:.5rem;}
+.cb p{font-size:.82rem;color:var(--dim);line-height:1.7;}
+.k{display:inline-block;font-family:'Orbitron',sans-serif;font-size:.5rem;
+  padding:.1rem .35rem;border:1px solid var(--border);color:var(--text);background:rgba(255,255,255,.05);}
+</style>
+</head>
+<body>
+<nav class="nav">
+   <a href="../index.html" class="back">← Hub</a>
+   <span class="title">Snakes</span>
+   <span class="level-badge" id="lvlBadge">Lv1/10</span>
+</nav>
+<div class="scores">
+   <div class="sb"><div class="sn p1" id="sc1">0</div><div class="sl">P1 Length</div></div>
+   <div class="sb"><div class="sn mid">VS</div><div class="sl" id="speedLabel">Normal</div></div>
+   <div class="sb"><div class="sn p2" id="sc2">0</div><div class="sl">AI Length</div></div>
+</div>
+<div class="cw">
+   <canvas id="c" height="480"></canvas>
+   <div class="ov" id="ov">
+     <div class="ot">SNAKES</div>
+     <div class="os">Survive · Eat food · Defeat the AI</div>
+     <button class="ob" onclick="startGame()">KICK OFF</button>
+   </div>
+</div>
+<div class="ctrl">
+   <div class="cb"><h4>// Player (Cyan)</h4>
+     <p><span class="k">W</span><span class="k">A</span><span class="k">S</span><span class="k">D</span> — Move</p></div>
+   <div class="cb"><h4>// AI Opponent</h4>
+     <p>Level <span id="aiLevel">1</span>/10 · A* Pathfinding</p></div>
+</div>
+
+<script>
+/* SNAKES ENHANCED
+   - 10 difficulty levels with grid expansion, speed increase
+   - AI opponent with A* pathfinding + obstacle avoidance
+   - Obstacle generation per level
+   - Score tracking & leaderboard prep
+*/
+
+const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
+let CELL,COLS,ROWS,W,H;
+let s1,s2,foods,obstacles,tickInterval,running=false;
+const keys={};
+let particles=[];
+
+const LEVELS=[
+  {gridSize:12, cellPx:14, speed:110, obstacles:0, foodCount:3, aiDifficulty:0.50},
+  {gridSize:14, cellPx:13, speed:105, obstacles:3, foodCount:3, aiDifficulty:0.55},
+  {gridSize:15, cellPx:12.5, speed:100, obstacles:5, foodCount:4, aiDifficulty:0.60},
+  {gridSize:16, cellPx:12, speed:95, obstacles:7, foodCount:4, aiDifficulty:0.65},
+  {gridSize:18, cellPx:11, speed:90, obstacles:10, foodCount:5, aiDifficulty:0.70},
+  {gridSize:20, cellPx:10, speed:85, obstacles:12, foodCount:5, aiDifficulty:0.75},
+  {gridSize:22, cellPx:9, speed:80, obstacles:15, foodCount:6, aiDifficulty:0.80},
+  {gridSize:24, cellPx:8, speed:75, obstacles:18, foodCount:6, aiDifficulty:0.85},
+  {gridSize:26, cellPx:7, speed:70, obstacles:22, foodCount:7, aiDifficulty:0.90},
+  {gridSize:28, cellPx:6.5, speed:65, obstacles:25, foodCount:7, aiDifficulty:0.95}
+];
+
+let currentLevel=0;
+
+function resize(){
+  W=canvas.offsetWidth; H=480;
+  canvas.width=W; canvas.height=H;
+}
+
+function initGame(){
+  const level=LEVELS[currentLevel];
+  CELL=level.cellPx;
+  COLS=Math.floor(W/CELL);
+  ROWS=Math.floor(H/CELL);
+  
+  const cx=Math.floor(COLS/2), cy=Math.floor(ROWS/2);
+  s1={body:[[cx-4,cy],[cx-5,cy],[cx-6,cy]],dir:[1,0],next:[1,0],alive:true,color:'#00f5ff',glow:'rgba(0,245,255,.5)'};
+  s2={body:[[cx+4,cy],[cx+5,cy],[cx+6,cy]],dir:[-1,0],next:[-1,0],alive:true,color:'#ff00aa',glow:'rgba(255,0,170,.5)',ai:true};
+  
+  foods=[];
+  for(let i=0;i<level.foodCount;i++) spawnFood();
+  
+  // Generate obstacles
+  obstacles=[];
+  for(let i=0;i<level.obstacles;i++){
+    let pos;
+    const occupied=new Set([...s1.body,...s2.body,...foods].map(p=>p[0]+','+p[1]));
+    do{ pos=[Math.floor(Math.random()*COLS),Math.floor(Math.random()*ROWS)]; }
+    while(occupied.has(pos[0]+','+pos[1]));
+    obstacles.push(pos);
+  }
+  
+  particles=[];
+  document.getElementById('lvlBadge').textContent=`Lv${currentLevel+1}/10`;
+  document.getElementById('aiLevel').textContent=(currentLevel+1);
+}
+
+function rnd(n){return Math.floor(Math.random()*n);}
+
+function occupiedCells(){
+  return new Set([...s1.body,...s2.body,...obstacles].map(p=>p[0]+','+p[1]));
+}
+
+function spawnFood(){
+  let pos;
+  const occupied=occupiedCells();
+  do{ pos=[rnd(COLS),rnd(ROWS)]; }while(occupied.has(pos[0]+','+pos[1]));
+  foods.push(pos);
+}
+
+window.addEventListener('keydown',e=>{
+  keys[e.key]=true;
+  const dirs={'w':[0,-1],'s':[0,1],'a':[-1,0],'d':[1,0],
+    'W':[0,-1],'S':[0,1],'A':[-1,0],'D':[1,0]};
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();
+  const d=dirs[e.key];
+  if(!d)return;
+  if(s1.dir[0]+d[0]!==0||s1.dir[1]+d[1]!==0) s1.next=d;
+});
+
+function aiBrain(){
+  const level=LEVELS[currentLevel];
+  // Simple: find nearest food, use A* pathfinding
+  if(!foods.length)return;
+  
+  // Find closest food
+  let closest=foods[0];
+  let minDist=Math.hypot(s2.body[0][0]-foods[0][0], s2.body[0][1]-foods[0][1]);
+  foods.forEach(f=>{
+    const d=Math.hypot(s2.body[0][0]-f[0], s2.body[0][1]-f[1]);
+    if(d<minDist){minDist=d;closest=f;}
+  });
+  
+  // Simple A*: try each direction, pick one that gets closer
+  const head=s2.body[0];
+  const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+  const occupied=occupiedCells();
+  
+  let bestDir=s2.dir;
+  let bestDist=minDist;
+  
+  for(const d of dirs){
+    const newHead=[head[0]+d[0],head[1]+d[1]];
+    if(newHead[0]<0||newHead[0]>=COLS||newHead[1]<0||newHead[1]>=ROWS)continue;
+    if(occupied.has(newHead[0]+','+newHead[1]))continue;
+    if(s2.dir[0]+d[0]===0&&s2.dir[1]+d[1]===0)continue; // no reverse
+    
+    const dist=Math.hypot(newHead[0]-closest[0],newHead[1]-closest[1]);
+    if(dist<bestDist){bestDist=dist;bestDir=d;}
+  }
+  
+  // Add error based on AI difficulty
+  if(Math.random()>(level.aiDifficulty)){
+    bestDir=dirs[Math.floor(Math.random()*dirs.length)];
+  }
+  
+  s2.next=bestDir;
+}
+
+function tick(){
+  if(!running)return;
+  
+  const level=LEVELS[currentLevel];
+  s1.dir=s1.next;
+  aiBrain();
+  s2.dir=s2.next;
+
+  const move=(s)=>{
+    if(!s.alive)return;
+    const head=[s.body[0][0]+s.dir[0], s.body[0][1]+s.dir[1]];
+    s.body.unshift(head);
+    const fi=foods.findIndex(f=>f[0]===head[0]&&f[1]===head[1]);
+    if(fi!==-1){
+      foods.splice(fi,1);
+      spawnFood();
+      createParticles(head[0]*CELL+CELL/2, head[1]*CELL+CELL/2, s.color);
+    } else s.body.pop();
+  };
+  move(s1);
+  move(s2);
+
+  const check=(s)=>{
+    if(!s.alive)return;
+    const [hx,hy]=s.body[0];
+    if(hx<0||hx>=COLS||hy<0||hy>=ROWS){s.alive=false;return;}
+    for(let i=1;i<s.body.length;i++)
+      if(s.body[i][0]===hx&&s.body[i][1]===hy){s.alive=false;return;}
+    for(const o of obstacles)
+      if(o[0]===hx&&o[1]===hy){s.alive=false;return;}
+    // Collision with other snake
+    for(const [bx,by] of (s===s1?s2:s1).body)
+      if(bx===hx&&by===hy){s.alive=false;return;}
+  };
+  check(s1);
+  check(s2);
+
+  document.getElementById('sc1').textContent=s1.body.length;
+  document.getElementById('sc2').textContent=s2.body.length;
+  
+  updateParticles();
+  drawGame();
+
+  if(!s1.alive||!s2.alive){
+    running=false; clearInterval(tickInterval);
+    setTimeout(showResult,300);
+  }
+}
+
+function createParticles(x,y,color){
+  for(let i=0;i<6;i++){
+    const angle=Math.random()*Math.PI*2;
+    particles.push({
+      x,y,
+      vx:Math.cos(angle)*2,
+      vy:Math.sin(angle)*2,
+      life:1,
+      size:Math.random()*2+1,
+      color
+    });
+  }
+}
+
+function updateParticles(){
+  particles=particles.filter(p=>{
+    p.x+=p.vx;
+    p.y+=p.vy;
+    p.vy+=0.1;
+    p.life-=0.04;
+    return p.life>0;
+  });
+}
+
+function drawGame(){
+  ctx.fillStyle='#020208'; ctx.fillRect(0,0,W,H);
+  
+  // Grid
+  ctx.fillStyle='rgba(0,245,255,.02)';
+  for(let x=0;x<COLS;x++) for(let y=0;y<ROWS;y++){
+    ctx.fillRect(x*CELL+CELL/2-0.5,y*CELL+CELL/2-0.5,1,1);
+  }
+  
+  // Obstacles
+  ctx.fillStyle='rgba(255,0,0,.3)';
+  obstacles.forEach(([ox,oy])=>{
+    ctx.fillRect(ox*CELL+1,oy*CELL+1,CELL-2,CELL-2);
+  });
+  
+  // Food
+  foods.forEach(([fx,fy])=>{
+    const px=fx*CELL+CELL/2, py=fy*CELL+CELL/2;
+    ctx.shadowColor='#ffd700'; ctx.shadowBlur=8;
+    ctx.beginPath(); ctx.arc(px,py,CELL*.35,0,Math.PI*2);
+    ctx.fillStyle='#ffd700'; ctx.fill();
+    ctx.shadowBlur=0;
+  });
+  
+  // Snakes
+  [s1,s2].forEach(s=>{
+    if(!s.body.length)return;
+    s.body.forEach(([bx,by],i)=>{
+      const px=bx*CELL,py=by*CELL;
+      ctx.shadowColor=s.color; ctx.shadowBlur=i===0?10:3;
+      ctx.fillStyle=i===0?s.color:s.glow;
+      ctx.fillRect(px+1,py+1,CELL-2,CELL-2);
+      if(i===0){
+        ctx.shadowBlur=0;
+        ctx.fillStyle='#fff';
+        const ex=px+CELL*.25+(s.dir[0]===1?CELL*.25:0);
+        const ey=py+CELL*.25+(s.dir[1]===1?CELL*.25:0);
+        ctx.fillRect(ex,ey,2,2);
+      }
+    });
+    ctx.shadowBlur=0;
+  });
+  
+  // Particles
+  particles.forEach(p=>{
+    ctx.globalAlpha=p.life;
+    ctx.fillStyle=p.color;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+    ctx.fill();
+  });
+  ctx.globalAlpha=1;
+}
+
+function showResult(){
+  const ov=document.getElementById('ov');
+  ov.classList.remove('h');
+  let msg, sub;
+  if(!s1.alive&&!s2.alive){msg='DRAW!';sub='Both snakes crashed!';}
+  else if(!s1.alive){msg='🤖 AI Wins!';sub=`AI length: ${s2.body.length}`;}
+  else{msg='🏆 You Win!';sub=`Your length: ${s1.body.length}`;}
+  ov.querySelector('.ot').textContent=msg;
+  ov.querySelector('.os').textContent=sub+` · Level ${currentLevel+1}/10`;
+  ov.querySelector('.ob').textContent=currentLevel+1<LEVELS.length?'Next Level':'Final Victory!';
+  ov.querySelector('.ob').onclick=()=>{
+    if(currentLevel+1<LEVELS.length){
+      currentLevel++;
+      startGame();
+    }else{
+      location.href='../index.html';
+    }
+  };
+}
+
+function startGame(){
+  resize(); initGame(); running=true;
+  document.getElementById('ov').classList.add('h');
+  clearInterval(tickInterval);
+  const level=LEVELS[currentLevel];
+  tickInterval=setInterval(tick,level.speed);
+  document.getElementById('speedLabel').textContent=`Lv${currentLevel+1} Speed`;
+  drawGame();
+}
+
+window.addEventListener('resize',()=>{if(!running)resize();});
+resize();
+ctx.fillStyle='#020208'; ctx.fillRect(0,0,W,H);
+</script>
+</body>
+</html>

@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chess — DJ's Games Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #04040d; --cyan: #00f5ff; --magenta: #ff00aa;
+      --gold: #ffd700; --green: #00ff88; --red: #ff4455;
+      --panel: rgba(0,245,255,0.04); --border: rgba(0,245,255,0.18);
+      --text: #c8d8ff; --dim: #5a6a8a;
+      --sq-light: #1a2a4a; --sq-dark: #0a1525;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 1.5rem 1rem; overflow-x: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 999;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px);
+      pointer-events: none;
+    }
+    .top-nav {
+      width: 100%; max-width: 700px;
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    .back {
+      font-family: 'Orbitron', sans-serif; font-size: 0.6rem; font-weight: 700;
+      color: var(--dim); text-decoration: none; border: 1px solid var(--dim);
+      padding: 0.5rem 1rem; letter-spacing: 0.1em; transition: all 0.3s;
+    }
+    .back:hover { color: var(--cyan); border-color: var(--cyan); }
+    .game-title { font-family: 'Press Start 2P', monospace; font-size: 0.85rem; color: var(--gold); text-shadow: 0 0 20px rgba(255,215,0,0.5); }
+
+    .mode-row { display: flex; gap: 0.6rem; margin-bottom: 1rem; }
+    .mode-btn {
+      font-family: 'Orbitron', sans-serif; font-size: 0.6rem; font-weight: 700;
+      letter-spacing: 0.12em; padding: 0.55rem 1.3rem;
+      background: transparent; color: var(--dim);
+      border: 1px solid var(--dim); cursor: pointer; transition: all 0.25s;
+    }
+    .mode-btn.active { color: var(--bg); background: var(--gold); border-color: var(--gold); box-shadow: 0 0 20px rgba(255,215,0,0.4); }
+
+    .status-bar {
+      width: 100%; max-width: 540px;
+      display: flex; justify-content: space-between; align-items: center;
+      border: 1px solid var(--border); background: var(--panel);
+      padding: 0.7rem 1.2rem; margin-bottom: 1rem;
+    }
+    .turn-indicator {
+      font-family: 'Orbitron', sans-serif; font-size: 0.65rem; font-weight: 700;
+      letter-spacing: 0.1em; color: #fff;
+    }
+    .turn-color {
+      display: inline-block; width: 12px; height: 12px;
+      border: 1px solid rgba(255,255,255,0.3);
+      vertical-align: middle; margin-right: 0.5rem;
+    }
+    .check-label {
+      font-family: 'Press Start 2P', monospace; font-size: 0.6rem;
+      color: var(--red); animation: blinkRed 0.7s ease infinite;
+    }
+    @keyframes blinkRed { 0%,100%{opacity:1} 50%{opacity:0.2} }
+    .check-label.hidden { display: none; }
+
+    /* BOARD */
+    .board-outer {
+      position: relative;
+      width: min(540px, 96vw);
+      margin-bottom: 1rem;
+    }
+    .board-outer::before {
+      content: ''; position: absolute; inset: -2px;
+      background: linear-gradient(135deg, var(--gold), var(--cyan), var(--gold));
+      z-index: -1; opacity: 0.4;
+    }
+    .board {
+      display: grid; grid-template-columns: repeat(8, 1fr);
+      width: 100%; border: 1px solid rgba(0,245,255,0.15);
+    }
+    .sq {
+      aspect-ratio: 1;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; position: relative;
+      transition: background 0.15s;
+      font-size: clamp(1.2rem, 4vw, 2rem);
+      user-select: none;
+    }
+    .sq.light { background: var(--sq-light); }
+    .sq.dark  { background: var(--sq-dark); }
+    .sq.selected { background: rgba(0,245,255,0.25) !important; box-shadow: inset 0 0 0 2px var(--cyan); }
+    .sq.move-hint::after {
+      content: '';
+      position: absolute;
+      width: 28%; height: 28%; border-radius: 50%;
+      background: rgba(0,245,255,0.45);
+      box-shadow: 0 0 10px rgba(0,245,255,0.5);
+    }
+    .sq.capture-hint { background: rgba(255,68,85,0.15) !important; box-shadow: inset 0 0 0 2px var(--red); }
+    .sq.in-check { background: rgba(255,68,85,0.3) !important; }
+    .piece { z-index: 1; line-height: 1; transition: transform 0.15s; }
+    .sq:hover .piece { transform: scale(1.12); }
+
+    /* COORDS */
+    .coord-row {
+      display: grid; grid-template-columns: repeat(8, 1fr);
+      width: min(540px, 96vw);
+    }
+    .coord {
+      font-family: 'Orbitron', sans-serif; font-size: 0.5rem;
+      color: var(--dim); text-align: center; padding: 0.2rem 0;
+      letter-spacing: 0.05em;
+    }
+
+    /* CAPTURED */
+    .captured-row {
+      width: 100%; max-width: 540px;
+      display: flex; gap: 1rem; margin-bottom: 1rem;
+    }
+    .cap-box { flex: 1; border: 1px solid var(--border); background: var(--panel); padding: 0.6rem 1rem; }
+    .cap-box h4 { font-family: 'Orbitron', sans-serif; font-size: 0.55rem; color: var(--dim); margin-bottom: 0.4rem; }
+    .cap-pieces { font-size: 1rem; min-height: 1.5rem; }
+
+    /* MOVE LIST */
+    .move-panel {
+      width: 100%; max-width: 540px;
+      border: 1px solid var(--border); background: var(--panel);
+      padding: 0.8rem 1rem; margin-bottom: 1rem;
+      max-height: 100px; overflow-y: auto;
+    }
+    .move-panel h4 { font-family: 'Orbitron', sans-serif; font-size: 0.55rem; color: var(--cyan); margin-bottom: 0.5rem; }
+    .move-list { font-family: 'Orbitron', sans-serif; font-size: 0.55rem; color: var(--dim); letter-spacing: 0.05em; line-height: 1.8; }
+
+    /* OVERLAY */
+    .game-overlay {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: rgba(4,4,13,0.88); z-index: 10;
+    }
+    .game-overlay.hidden { display: none; }
+    .overlay-title { font-family: 'Press Start 2P', monospace; font-size: clamp(0.85rem,3.5vw,1.4rem); color: var(--gold); text-align: center; text-shadow: 0 0 30px rgba(255,215,0,0.7); margin-bottom: 0.7rem; }
+    .overlay-sub { font-family: 'Orbitron', sans-serif; font-size: 0.6rem; color: var(--dim); letter-spacing: 0.12em; margin-bottom: 1.5rem; }
+    .overlay-btn { font-family: 'Orbitron', sans-serif; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.18em; padding: 0.8rem 2rem; background: var(--gold); color: var(--bg); border: none; cursor: pointer; box-shadow: 0 0 24px rgba(255,215,0,0.4); transition: all 0.25s; }
+    .overlay-btn:hover { background: #fff; }
+
+    .actions { display: flex; gap: 0.8rem; margin-top: 0.3rem; }
+    .action-btn { font-family: 'Orbitron', sans-serif; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.12em; padding: 0.6rem 1.4rem; cursor: pointer; background: transparent; border: 1px solid var(--border); color: var(--dim); transition: all 0.25s; }
+    .action-btn:hover { border-color: var(--gold); color: var(--gold); }
+  </style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <a href="../index.html" class="back">← Hub</a>
+  <span class="game-title">Chess</span>
+  <span style="width:80px"></span>
+</nav>
+
+<div class="mode-row">
+  <button class="mode-btn active" id="btn2p" onclick="setMode('2p')">👥 Pass & Play</button>
+  <button class="mode-btn" id="btnAI" onclick="setMode('ai')">🤖 vs AI</button>
+</div>
+
+<div class="status-bar">
+  <div class="turn-indicator">
+    <span class="turn-color" id="turnColor" style="background:#fff"></span>
+    <span id="turnText">White's Turn</span>
+  </div>
+  <span class="check-label hidden" id="checkLabel">CHECK!</span>
+  <span style="font-family:'Orbitron',sans-serif;font-size:0.55rem;color:var(--dim)" id="modeLabel">Pass & Play</span>
+</div>
+
+<!-- BOARD -->
+<div class="board-outer">
+  <div class="board" id="board"></div>
+  <div class="game-overlay hidden" id="overlay">
+    <div class="overlay-title" id="overlayTitle">CHECKMATE!</div>
+    <div class="overlay-sub" id="overlaySub">White wins</div>
+    <button class="overlay-btn" onclick="newGame()">New Game</button>
+  </div>
+</div>
+
+<!-- FILE LABELS -->
+<div class="coord-row">
+  <div class="coord">a</div><div class="coord">b</div><div class="coord">c</div>
+  <div class="coord">d</div><div class="coord">e</div><div class="coord">f</div>
+  <div class="coord">g</div><div class="coord">h</div>
+</div>
+
+<!-- CAPTURED PIECES -->
+<div class="captured-row">
+  <div class="cap-box">
+    <h4>White captured</h4>
+    <div class="cap-pieces" id="capW"></div>
+  </div>
+  <div class="cap-box">
+    <h4>Black captured</h4>
+    <div class="cap-pieces" id="capB"></div>
+  </div>
+</div>
+
+<!-- MOVE LIST -->
+<div class="move-panel">
+  <h4>// Move History</h4>
+  <div class="move-list" id="moveList">—</div>
+</div>
+
+<div class="actions">
+  <button class="action-btn" onclick="newGame()">New Game</button>
+  <button class="action-btn" onclick="undoMove()">Undo</button>
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   CHESS ENGINE
+   ══════════════════════════════════════════
+   This implements:
+   • Full legal move generation (including check detection)
+   • Castling (king & queenside)
+   • En passant
+   • Pawn promotion (auto-queens)
+   • Checkmate & stalemate detection
+   • Simple AI using material evaluation + basic tactics
+   • Move history & undo
+*/
+
+// ── PIECE DEFINITIONS ──────────────────────
+// Unicode chess symbols
+const PIECES = {
+  wK:'♔', wQ:'♕', wR:'♖', wB:'♗', wN:'♘', wP:'♙',
+  bK:'♚', bQ:'♛', bR:'♜', bB:'♝', bN:'♞', bP:'♟'
+};
+
+// Piece values for AI evaluation
+const PIECE_VALUES = { K:10000, Q:900, R:500, B:330, N:320, P:100 };
+
+// Initial board setup [row 0 = rank 8 (top, black side)]
+const INIT = [
+  ['bR','bN','bB','bQ','bK','bB','bN','bR'],
+  ['bP','bP','bP','bP','bP','bP','bP','bP'],
+  [null,null,null,null,null,null,null,null],
+  [null,null,null,null,null,null,null,null],
+  [null,null,null,null,null,null,null,null],
+  [null,null,null,null,null,null,null,null],
+  ['wP','wP','wP','wP','wP','wP','wP','wP'],
+  ['wR','wN','wB','wQ','wK','wB','wN','wR']
+];
+
+// ── STATE ──────────────────────────────────
+let board, turn, selected, legalMoves, gameMode;
+let history = []; // stack of {board, turn, captured, enPassant, castling}
+let capturedW = [], capturedB = [];
+let moveLog   = [];
+let enPassant = null; // {row, col} of the ep-capturable square
+let castling  = { wK:true, wQ:true, bK:true, bQ:true };
+
+function newGame() {
+  board      = INIT.map(r => [...r]);
+  turn       = 'w';
+  selected   = null;
+  legalMoves = [];
+  history    = [];
+  capturedW  = []; capturedB = [];
+  moveLog    = [];
+  enPassant  = null;
+  castling   = { wK:true, wQ:true, bK:true, bQ:true };
+  document.getElementById('overlay').classList.add('hidden');
+  renderBoard();
+  updateUI();
+}
+
+// ── BUILD BOARD DOM ────────────────────────
+function renderBoard() {
+  const el = document.getElementById('board');
+  el.innerHTML = '';
+
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const sq  = document.createElement('div');
+      const idx = r * 8 + c;
+      sq.className = `sq ${(r+c)%2===0?'light':'dark'}`;
+      sq.dataset.r = r; sq.dataset.c = c;
+
+      // Highlight classes
+      if (selected && selected.r===r && selected.c===c) sq.classList.add('selected');
+      if (legalMoves.some(m => m.r===r && m.c===c)) {
+        if (board[r][c]) sq.classList.add('capture-hint');
+        else             sq.classList.add('move-hint');
+      }
+      // Show king in check
+      if (board[r][c] === turn+'K' && isInCheck(board, turn)) sq.classList.add('in-check');
+
+      if (board[r][c]) {
+        const p  = document.createElement('span');
+        p.className = 'piece';
+        p.textContent = PIECES[board[r][c]];
+        sq.appendChild(p);
+      }
+
+      // Rank label on col 0
+      if (c === 0) {
+        const lbl = document.createElement('span');
+        lbl.style.cssText = `position:absolute;top:2px;left:3px;font-family:'Orbitron',sans-serif;font-size:0.4rem;color:var(--dim);`;
+        lbl.textContent = 8 - r;
+        sq.appendChild(lbl);
+      }
+
+      sq.addEventListener('click', () => onSquareClick(r, c));
+      el.appendChild(sq);
+    }
+  }
+}
+
+// ── CLICK HANDLER ─────────────────────────
+function onSquareClick(r, c) {
+  if (gameMode === 'ai' && turn === 'b') return;
+
+  if (selected) {
+    // Attempt to move
+    const move = legalMoves.find(m => m.r===r && m.c===c);
+    if (move) {
+      executeMove(move);
+      return;
+    }
+  }
+
+  // Select piece
+  const piece = board[r][c];
+  if (piece && piece[0] === turn) {
+    selected   = {r, c};
+    legalMoves = getLegalMoves(board, r, c, turn, enPassant, castling);
+  } else {
+    selected   = null;
+    legalMoves = [];
+  }
+  renderBoard();
+}
+
+// ── EXECUTE MOVE ───────────────────────────
+function executeMove(move) {
+  // Save state for undo
+  history.push({
+    board: board.map(r=>[...r]),
+    turn, enPassant: enPassant ? {...enPassant} : null,
+    castling: {...castling},
+    capturedW: [...capturedW], capturedB: [...capturedB],
+    moveLog: [...moveLog]
+  });
+
+  const piece    = board[move.from.r][move.from.c];
+  const target   = board[move.r][move.c];
+  const color    = piece[0];
+
+  // Capture
+  if (target) {
+    color === 'w' ? capturedW.push(target) : capturedB.push(target);
+  }
+
+  // En passant capture
+  if (move.enPassant) {
+    const epR = move.r + (color==='w' ? 1 : -1);
+    const captured = board[epR][move.c];
+    color === 'w' ? capturedW.push(captured) : capturedB.push(captured);
+    board[epR][move.c] = null;
+  }
+
+  // Castling rook move
+  if (move.castle) {
+    if (move.castle === 'K') { board[move.r][5]=board[move.r][7]; board[move.r][7]=null; }
+    if (move.castle === 'Q') { board[move.r][3]=board[move.r][0]; board[move.r][0]=null; }
+  }
+
+  // Update castling rights
+  if (piece[1]==='K') { castling[color+'K']=false; castling[color+'Q']=false; }
+  if (piece==='wR') { if(move.from.c===0)castling.wQ=false; if(move.from.c===7)castling.wK=false; }
+  if (piece==='bR') { if(move.from.c===0)castling.bQ=false; if(move.from.c===7)castling.bK=false; }
+
+  // Move piece
+  board[move.r][move.c]         = piece;
+  board[move.from.r][move.from.c] = null;
+
+  // En passant flag
+  enPassant = null;
+  if (piece[1]==='P' && Math.abs(move.r - move.from.r)===2) {
+    enPassant = { r: (move.r + move.from.r) / 2, c: move.c };
+  }
+
+  // Pawn promotion (auto-queen)
+  if (piece==='wP' && move.r===0) board[move.r][move.c] = 'wQ';
+  if (piece==='bP' && move.r===7) board[move.r][move.c] = 'bQ';
+
+  // Log move (simple algebraic)
+  const cols='abcdefgh', rows='87654321';
+  moveLog.push(`${PIECES[piece]}${cols[move.from.c]}${rows[move.from.r]}→${cols[move.c]}${rows[move.r]}${target?'×':''}`);
+
+  // Switch turn
+  turn = turn==='w' ? 'b' : 'w';
+  selected = null; legalMoves = [];
+
+  renderBoard();
+  updateUI();
+  checkGameOver();
+
+  if (gameMode==='ai' && turn==='b') {
+    setTimeout(aiMove, 350);
+  }
+}
+
+// ── LEGAL MOVE GENERATION ──────────────────
+/*
+  Move generation strategy:
+  1. Generate pseudo-legal moves for piece type
+  2. Filter: only keep moves that don't leave own king in check
+  3. Castling: checked separately (can't castle through/into check)
+*/
+function getLegalMoves(b, r, c, color, ep, cast) {
+  const pseudo = getPseudoMoves(b, r, c, color, ep, cast);
+  return pseudo.filter(m => {
+    // Simulate move and verify king not in check
+    const nb = b.map(row=>[...row]);
+    nb[m.r][m.c] = nb[r][c];
+    nb[r][c] = null;
+    if (m.enPassant) {
+      const epR = m.r + (color==='w'?1:-1);
+      nb[epR][m.c] = null;
+    }
+    return !isInCheck(nb, color);
+  });
+}
+
+function getPseudoMoves(b, r, c, color, ep, cast) {
+  const piece = b[r][c];
+  if (!piece || piece[0] !== color) return [];
+  const type  = piece[1];
+  const opp   = color==='w' ? 'b' : 'w';
+  const moves = [];
+  const from  = {r, c};
+
+  const add = (tr, tc, extra={}) => {
+    if (tr<0||tr>7||tc<0||tc>7) return false;
+    const t = b[tr][tc];
+    if (t && t[0]===color) return false; // blocked by own piece
+    moves.push({r:tr, c:tc, from, ...extra});
+    return !t; // returns true if empty (can continue sliding)
+  };
+
+  if (type==='P') {
+    const dir = color==='w' ? -1 : 1;
+    const start = color==='w' ? 6 : 1;
+    if (!b[r+dir]?.[c]) {
+      add(r+dir, c);
+      if (r===start && !b[r+2*dir]?.[c]) add(r+2*dir, c);
+    }
+    // Captures
+    [c-1, c+1].forEach(tc => {
+      if (tc<0||tc>7) return;
+      if (b[r+dir]?.[tc]?.[0]===opp) add(r+dir, tc);
+      // En passant
+      if (ep && r+dir===ep.r && tc===ep.c) add(r+dir, tc, {enPassant:true});
+    });
+  }
+
+  if (type==='N') {
+    [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]
+      .forEach(([dr,dc]) => add(r+dr, c+dc));
+  }
+
+  if (type==='B' || type==='Q') {
+    [[-1,-1],[-1,1],[1,-1],[1,1]].forEach(([dr,dc]) => {
+      let tr=r+dr, tc=c+dc;
+      while(tr>=0&&tr<8&&tc>=0&&tc<8) { if(!add(tr,tc)) break; tr+=dr; tc+=dc; }
+    });
+  }
+
+  if (type==='R' || type==='Q') {
+    [[-1,0],[1,0],[0,-1],[0,1]].forEach(([dr,dc]) => {
+      let tr=r+dr, tc=c+dc;
+      while(tr>=0&&tr<8&&tc>=0&&tc<8) { if(!add(tr,tc)) break; tr+=dr; tc+=dc; }
+    });
+  }
+
+  if (type==='K') {
+    [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]
+      .forEach(([dr,dc]) => add(r+dr, c+dc));
+    // Castling
+    const rank = color==='w' ? 7 : 0;
+    if (r===rank && c===4 && !isInCheck(b,color)) {
+      if (cast[color+'K'] && !b[rank][5] && !b[rank][6]) {
+        const nb5=b.map(x=>[...x]); nb5[rank][5]=piece; nb5[rank][4]=null;
+        if (!isInCheck(nb5,color))
+          moves.push({r:rank, c:6, from, castle:'K'});
+      }
+      if (cast[color+'Q'] && !b[rank][3] && !b[rank][2] && !b[rank][1]) {
+        const nb3=b.map(x=>[...x]); nb3[rank][3]=piece; nb3[rank][4]=null;
+        if (!isInCheck(nb3,color))
+          moves.push({r:rank, c:2, from, castle:'Q'});
+      }
+    }
+  }
+
+  return moves;
+}
+
+// ── CHECK DETECTION ────────────────────────
+function isInCheck(b, color) {
+  // Find king position
+  let kr=-1, kc=-1;
+  for (let r=0;r<8;r++) for (let c=0;c<8;c++)
+    if (b[r][c]===color+'K') { kr=r; kc=c; }
+  if (kr===-1) return false;
+
+  const opp = color==='w'?'b':'w';
+  // Check if any opponent piece attacks king
+  for (let r=0;r<8;r++) for (let c=0;c<8;c++) {
+    if (!b[r][c] || b[r][c][0]!==opp) continue;
+    const attacks = getPseudoMoves(b,r,c,opp,null,{wK:false,wQ:false,bK:false,bQ:false});
+    if (attacks.some(m=>m.r===kr&&m.c===kc)) return true;
+  }
+  return false;
+}
+
+function getAllLegalMoves(b, color, ep, cast) {
+  const moves = [];
+  for (let r=0;r<8;r++) for (let c=0;c<8;c++) {
+    if (b[r][c]?.[0]===color)
+      moves.push(...getLegalMoves(b,r,c,color,ep,cast));
+  }
+  return moves;
+}
+
+// ── GAME OVER CHECK ────────────────────────
+function checkGameOver() {
+  const allMoves = getAllLegalMoves(board, turn, enPassant, castling);
+  if (allMoves.length === 0) {
+    const ov = document.getElementById('overlay');
+    ov.classList.remove('hidden');
+    if (isInCheck(board, turn)) {
+      const winner = turn==='w' ? 'Black' : 'White';
+      document.getElementById('overlayTitle').textContent = 'CHECKMATE!';
+      document.getElementById('overlaySub').textContent = `${winner} wins — well played`;
+    } else {
+      document.getElementById('overlayTitle').textContent = 'STALEMATE';
+      document.getElementById('overlaySub').textContent = 'Draw — no legal moves';
+    }
+    localStorage.setItem('djhub_totalplays', (parseInt(localStorage.getItem('djhub_totalplays')||'0')+1).toString());
+  }
+}
+
+// ── AI (MINIMAX + MATERIAL EVAL) ───────────
+/*
+  Chess AI: depth-limited minimax with alpha-beta pruning
+  Evaluation: material count + positional bonuses (piece-square tables)
+  Depth 2 is fast enough for in-browser play without a Web Worker.
+  For stronger play, increase depth or integrate Stockfish WASM.
+*/
+const PST = {
+  // Pawn positional bonus (white, rows 0-7 from white's view)
+  P: [
+    [0,0,0,0,0,0,0,0],
+    [50,50,50,50,50,50,50,50],
+    [10,10,20,30,30,20,10,10],
+    [5,5,10,25,25,10,5,5],
+    [0,0,0,20,20,0,0,0],
+    [5,-5,-10,0,0,-10,-5,5],
+    [5,10,10,-20,-20,10,10,5],
+    [0,0,0,0,0,0,0,0]
+  ],
+  N: [
+    [-50,-40,-30,-30,-30,-30,-40,-50],
+    [-40,-20,0,0,0,0,-20,-40],
+    [-30,0,10,15,15,10,0,-30],
+    [-30,5,15,20,20,15,5,-30],
+    [-30,0,15,20,20,15,0,-30],
+    [-30,5,10,15,15,10,5,-30],
+    [-40,-20,0,5,5,0,-20,-40],
+    [-50,-40,-30,-30,-30,-30,-40,-50]
+  ]
+};
+
+function evaluate(b) {
+  let score = 0;
+  for (let r=0;r<8;r++) for (let c=0;c<8;c++) {
+    const p = b[r][c];
+    if (!p) continue;
+    const color = p[0], type = p[1];
+    const val = PIECE_VALUES[type] || 0;
+    // Positional bonus (flipped for black)
+    const pr = color==='w' ? r : 7-r;
+    const pst = PST[type] ? (PST[type][pr]?.[c]||0) : 0;
+    score += (color==='w' ? 1 : -1) * (val + pst);
+  }
+  return score;
+}
+
+function minimaxChess(b, depth, alpha, beta, maximizing, ep, cast) {
+  const color = maximizing ? 'b' : 'w'; // AI is black
+  const moves = getAllLegalMoves(b, color, ep, cast);
+
+  if (depth === 0 || moves.length === 0) return { score: evaluate(b) };
+
+  let best = maximizing ? {score:-Infinity,move:null} : {score:Infinity,move:null};
+
+  for (const m of moves) {
+    const nb   = b.map(r=>[...r]);
+    const np   = nb[m.from.r][m.from.c];
+    nb[m.r][m.c] = np; nb[m.from.r][m.from.c] = null;
+    if (m.enPassant) nb[m.r+(color==='w'?1:-1)][m.c] = null;
+    if (m.castle==='K') { nb[m.r][5]=nb[m.r][7]; nb[m.r][7]=null; }
+    if (m.castle==='Q') { nb[m.r][3]=nb[m.r][0]; nb[m.r][0]=null; }
+    if (np==='wP'&&m.r===0) nb[m.r][m.c]='wQ';
+    if (np==='bP'&&m.r===7) nb[m.r][m.c]='bQ';
+
+    const nCast = {...cast};
+    if (np?.[1]==='K') { nCast[color+'K']=false; nCast[color+'Q']=false; }
+
+    let nEp = null;
+    if (np?.[1]==='P' && Math.abs(m.r-m.from.r)===2)
+      nEp = {r:(m.r+m.from.r)/2, c:m.c};
+
+    const result = minimaxChess(nb, depth-1, alpha, beta, !maximizing, nEp, nCast);
+
+    if (maximizing) {
+      if (result.score > best.score) best = {score:result.score, move:m};
+      alpha = Math.max(alpha, best.score);
+    } else {
+      if (result.score < best.score) best = {score:result.score, move:m};
+      beta  = Math.min(beta,  best.score);
+    }
+    if (beta <= alpha) break;
+  }
+  return best;
+}
+
+function aiMove() {
+  const result = minimaxChess(board, 2, -Infinity, Infinity, true, enPassant, castling);
+  if (result.move) executeMove(result.move);
+}
+
+// ── UI UPDATES ─────────────────────────────
+function updateUI() {
+  const inCheck = isInCheck(board, turn);
+  document.getElementById('checkLabel').classList.toggle('hidden', !inCheck);
+  document.getElementById('turnColor').style.background = turn==='w' ? '#fff' : '#222';
+  document.getElementById('turnColor').style.border     = turn==='w' ? '1px solid #888' : '1px solid #00f5ff';
+  document.getElementById('turnText').textContent       = turn==='w' ? "White's Turn" : "Black's Turn";
+  document.getElementById('capW').textContent  = capturedW.map(p=>PIECES[p]).join(' ');
+  document.getElementById('capB').textContent  = capturedB.map(p=>PIECES[p]).join(' ');
+  document.getElementById('moveList').textContent = moveLog.length
+    ? moveLog.reduce((acc,m,i)=> i%2===0 ? acc+`\n${i/2+1}. ${m}` : acc+` ${m}`, '').trim()
+    : '—';
+}
+
+function undoMove() {
+  if (!history.length) return;
+  const s = history.pop();
+  board=s.board.map(r=>[...r]); turn=s.turn;
+  enPassant=s.enPassant; castling=s.castling;
+  capturedW=s.capturedW; capturedB=s.capturedB;
+  moveLog=s.moveLog;
+  selected=null; legalMoves=[];
+  document.getElementById('overlay').classList.add('hidden');
+  renderBoard(); updateUI();
+}
+
+function setMode(m) {
+  gameMode = m;
+  document.getElementById('btn2p').classList.toggle('active',m==='2p');
+  document.getElementById('btnAI').classList.toggle('active', m==='ai');
+  document.getElementById('modeLabel').textContent = m==='ai' ? 'You = White · AI = Black' : 'Pass & Play';
+  newGame();
+}
+
+// ── INIT ───────────────────────────────────
+gameMode = '2p';
+newGame();
+</script>
+</body>
+</html>

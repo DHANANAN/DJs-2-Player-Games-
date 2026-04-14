@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ping Pong — DJ's Games Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #04040d; --cyan: #00f5ff; --magenta: #ff00aa;
+      --gold: #ffd700; --green: #00ff88; --red: #ff4455;
+      --panel: rgba(0,245,255,0.04); --border: rgba(0,245,255,0.18);
+      --text: #c8d8ff; --dim: #5a6a8a;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 1.5rem 1rem; overflow-x: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 999;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px);
+      pointer-events: none;
+    }
+
+    .top-nav {
+      width: 100%; max-width: 700px;
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    .back {
+      font-family: 'Orbitron', sans-serif; font-size: 0.6rem; font-weight: 700;
+      color: var(--dim); text-decoration: none; border: 1px solid var(--dim);
+      padding: 0.5rem 1rem; letter-spacing: 0.1em; transition: all 0.3s;
+    }
+    .back:hover { color: var(--cyan); border-color: var(--cyan); }
+    .game-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.85rem; color: var(--magenta);
+      text-shadow: 0 0 20px rgba(255,0,170,0.6);
+    }
+
+    /* MODE ROW */
+    .mode-row { display: flex; gap: 0.6rem; margin-bottom: 1rem; }
+    .mode-btn {
+      font-family: 'Orbitron', sans-serif; font-size: 0.6rem; font-weight: 700;
+      letter-spacing: 0.12em; padding: 0.55rem 1.3rem;
+      background: transparent; color: var(--dim);
+      border: 1px solid var(--dim); cursor: pointer; transition: all 0.25s;
+    }
+    .mode-btn.active {
+      color: var(--bg); background: var(--magenta);
+      border-color: var(--magenta);
+      box-shadow: 0 0 20px rgba(255,0,170,0.4);
+    }
+
+    /* SCORE STRIP */
+    .score-strip {
+      width: 100%; max-width: 700px;
+      display: grid; grid-template-columns: 1fr auto 1fr;
+      margin-bottom: 1rem;
+    }
+    .score-box { text-align: center; padding: 0.6rem; border: 1px solid var(--border); background: var(--panel); }
+    .score-box + .score-box { border-left: none; }
+    .score-val { font-family: 'Orbitron', sans-serif; font-size: 2rem; font-weight: 900; }
+    .score-val.p1 { color: var(--cyan); text-shadow: 0 0 16px rgba(0,245,255,0.5); }
+    .score-val.p2 { color: var(--magenta); text-shadow: 0 0 16px rgba(255,0,170,0.5); }
+    .score-val.sep { color: var(--dim); }
+    .score-lbl { font-family: 'Orbitron', sans-serif; font-size: 0.5rem; color: var(--dim); letter-spacing: 0.12em; }
+
+    /* CANVAS WRAP */
+    .canvas-wrap {
+      position: relative;
+      width: min(700px, 96vw);
+      border: 1px solid var(--border);
+      background: #020208;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+    .canvas-wrap::before {
+      content: '';
+      position: absolute; inset: -2px;
+      background: linear-gradient(90deg, var(--magenta), var(--cyan), var(--magenta));
+      z-index: -1; opacity: 0.4;
+    }
+    canvas { display: block; width: 100%; }
+
+    /* OVERLAY */
+    .game-overlay {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: rgba(4,4,13,0.85); z-index: 10;
+    }
+    .game-overlay.hidden { display: none; }
+    .overlay-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(1rem, 4vw, 1.8rem);
+      color: var(--gold); text-align: center;
+      text-shadow: 0 0 30px rgba(255,215,0,0.7);
+      margin-bottom: 0.8rem;
+    }
+    .overlay-sub {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.65rem; color: var(--dim);
+      letter-spacing: 0.15em; margin-bottom: 1.8rem;
+    }
+    .overlay-btn {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.7rem; font-weight: 700;
+      letter-spacing: 0.2em; padding: 0.9rem 2.2rem;
+      background: var(--cyan); color: var(--bg); border: none; cursor: pointer;
+      box-shadow: 0 0 24px rgba(0,245,255,0.5); transition: all 0.25s;
+    }
+    .overlay-btn:hover { background: #fff; box-shadow: 0 0 40px rgba(0,245,255,0.8); }
+
+    /* CONTROLS INFO */
+    .controls-panel {
+      width: 100%; max-width: 700px;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 1rem; margin-bottom: 1rem;
+    }
+    .ctrl-box { border: 1px solid var(--border); background: var(--panel); padding: 1rem 1.2rem; }
+    .ctrl-box h4 {
+      font-family: 'Orbitron', sans-serif; font-size: 0.6rem;
+      color: var(--cyan); letter-spacing: 0.15em; margin-bottom: 0.6rem;
+    }
+    .ctrl-box p { font-size: 0.85rem; color: var(--dim); line-height: 1.7; font-weight: 300; }
+    .key {
+      display: inline-block; font-family: 'Orbitron', sans-serif;
+      font-size: 0.55rem; padding: 0.1rem 0.4rem;
+      border: 1px solid var(--border); color: var(--text);
+      background: rgba(255,255,255,0.05);
+    }
+
+    @media (max-width: 500px) {
+      .controls-panel { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <a href="../index.html" class="back">← Hub</a>
+  <span class="game-title">Ping Pong</span>
+  <span style="width:80px"></span>
+</nav>
+
+<!-- MODE -->
+<div class="mode-row">
+  <button class="mode-btn active" id="btn2p" onclick="setMode('2p')">👥 2 Player</button>
+  <button class="mode-btn" id="btnAI" onclick="setMode('ai')">🤖 vs AI</button>
+</div>
+
+<!-- SCOREBOARD -->
+<div class="score-strip">
+  <div class="score-box">
+    <div class="score-val p1" id="s1">0</div>
+    <div class="score-lbl" id="lbl1">Player 1</div>
+  </div>
+  <div class="score-box">
+    <div class="score-val sep">—</div>
+    <div class="score-lbl">First to 7</div>
+  </div>
+  <div class="score-box">
+    <div class="score-val p2" id="s2">0</div>
+    <div class="score-lbl" id="lbl2">Player 2</div>
+  </div>
+</div>
+
+<!-- CANVAS -->
+<div class="canvas-wrap">
+  <canvas id="pong" height="400"></canvas>
+  <div class="game-overlay" id="overlay">
+    <div class="overlay-title" id="overlayTitle">PING PONG</div>
+    <div class="overlay-sub" id="overlaySub">Press Start to play</div>
+    <button class="overlay-btn" id="overlayBtn" onclick="startGame()">START GAME</button>
+  </div>
+</div>
+
+<!-- CONTROLS INFO -->
+<div class="controls-panel">
+  <div class="ctrl-box">
+    <h4>// Player 1 (Left)</h4>
+    <p><span class="key">W</span> Move Up &nbsp; <span class="key">S</span> Move Down</p>
+  </div>
+  <div class="ctrl-box" id="ctrl2">
+    <h4>// Player 2 (Right)</h4>
+    <p><span class="key">↑</span> Move Up &nbsp; <span class="key">↓</span> Move Down</p>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   PING PONG ENGINE
+   Canvas-based, 60fps game loop using
+   requestAnimationFrame.
+
+   Architecture decisions:
+   • All game state lives in a single `state` object
+   • Physics: ball velocity, collision detection with paddles & walls
+   • AI: predicts ball Y position with deliberate imperfection by difficulty
+   • Rendering: clearRect + direct canvas 2D API (no library needed for performance)
+   ══════════════════════════════════════════ */
+
+const canvas = document.getElementById('pong');
+const ctx    = canvas.getContext('2d');
+let W, H;  // set by resize()
+
+const WIN_SCORE = 7;
+let mode        = '2p';
+let running     = false;
+let animId      = null;
+
+/* ── STATE ──────────────────────────────── */
+let state = {};
+
+function initState() {
+  return {
+    ball: { x: W/2, y: H/2, vx: 4, vy: 3, r: 8, speed: 4 },
+    p1:   { y: H/2 - 40, h: 80, w: 12, speed: 6, score: 0 },
+    p2:   { y: H/2 - 40, h: 80, w: 12, speed: 6, score: 0 },
+    keys: {},
+    // AI state
+    aiTarget: H/2,
+    aiErr: 0
+  };
+}
+
+/* ── RESIZE ─────────────────────────────── */
+function resize() {
+  W = canvas.offsetWidth;
+  H = 400;
+  canvas.width  = W;
+  canvas.height = H;
+}
+
+/* ── INPUT ──────────────────────────────── */
+const keys = {};
+window.addEventListener('keydown', e => {
+  keys[e.key] = true;
+  // Prevent page scroll on arrow keys
+  if (['ArrowUp','ArrowDown',' '].includes(e.key)) e.preventDefault();
+});
+window.addEventListener('keyup', e => { keys[e.key] = false; });
+
+/* ── GAME LOOP ──────────────────────────── */
+function loop() {
+  update();
+  draw();
+  animId = requestAnimationFrame(loop);
+}
+
+/* ── UPDATE ─────────────────────────────── */
+function update() {
+  const { ball, p1, p2 } = state;
+  const PAD_GAP = 20; // gap from wall to paddle
+
+  // ── Player 1 controls (W/S) ──
+  if (keys['w'] || keys['W']) p1.y -= p1.speed;
+  if (keys['s'] || keys['S']) p1.y += p1.speed;
+  p1.y = Math.max(0, Math.min(H - p1.h, p1.y));
+
+  // ── Player 2 controls (arrows) or AI ──
+  if (mode === '2p') {
+    if (keys['ArrowUp'])   p2.y -= p2.speed;
+    if (keys['ArrowDown']) p2.y += p2.speed;
+  } else {
+    aiMove(p2, ball);
+  }
+  p2.y = Math.max(0, Math.min(H - p2.h, p2.y));
+
+  // ── Ball movement ──
+  ball.x += ball.vx;
+  ball.y += ball.vy;
+
+  // ── Wall bounce (top/bottom) ──
+  if (ball.y - ball.r <= 0) { ball.y = ball.r; ball.vy *= -1; }
+  if (ball.y + ball.r >= H) { ball.y = H - ball.r; ball.vy *= -1; }
+
+  // ── Paddle collision: P1 (left) ──
+  const p1x = PAD_GAP + p1.w;
+  if (
+    ball.vx < 0 &&
+    ball.x - ball.r <= p1x &&
+    ball.x - ball.r >= PAD_GAP &&
+    ball.y >= p1.y && ball.y <= p1.y + p1.h
+  ) {
+    ball.x  = p1x + ball.r;
+    ball.vx = Math.abs(ball.vx);
+    // Add spin based on where ball hits paddle
+    const relY = (ball.y - (p1.y + p1.h/2)) / (p1.h/2);
+    ball.vy = relY * 6;
+    speedUp();
+  }
+
+  // ── Paddle collision: P2 (right) ──
+  const p2x = W - PAD_GAP - p2.w;
+  if (
+    ball.vx > 0 &&
+    ball.x + ball.r >= p2x &&
+    ball.x + ball.r <= W - PAD_GAP &&
+    ball.y >= p2.y && ball.y <= p2.y + p2.h
+  ) {
+    ball.x  = p2x - ball.r;
+    ball.vx = -Math.abs(ball.vx);
+    const relY = (ball.y - (p2.y + p2.h/2)) / (p2.h/2);
+    ball.vy = relY * 6;
+    speedUp();
+  }
+
+  // ── Score ──
+  if (ball.x - ball.r <= 0) {
+    p2.score++;
+    updateScore();
+    if (p2.score >= WIN_SCORE) { endGame(2); return; }
+    resetBall(-1);
+  }
+  if (ball.x + ball.r >= W) {
+    p1.score++;
+    updateScore();
+    if (p1.score >= WIN_SCORE) { endGame(1); return; }
+    resetBall(1);
+  }
+}
+
+function speedUp() {
+  // Gradually increase ball speed each rally (capped)
+  const s = state.ball;
+  const mag = Math.sqrt(s.vx*s.vx + s.vy*s.vy);
+  const newMag = Math.min(mag * 1.04, 14);
+  s.vx = (s.vx/mag) * newMag;
+  s.vy = (s.vy/mag) * newMag;
+}
+
+/*
+  AI PADDLE LOGIC:
+  ─────────────────
+  The AI doesn't just teleport to the ball — that'd be unbeatable.
+  Instead it:
+  1. Predicts where the ball will be when it reaches the AI's side
+  2. Adds a random error offset (more error = easier difficulty)
+  3. Moves the paddle toward that target at a fixed speed
+
+  This creates human-like imperfection and is tunable.
+*/
+function aiMove(p2, ball) {
+  // Only track ball when it's coming toward AI
+  if (ball.vx > 0) {
+    // Predict Y position when ball reaches paddle X
+    const distX = (W - 20 - p2.w) - ball.x;
+    const timeToArrive = distX / ball.vx;
+    let predictY = ball.y + ball.vy * timeToArrive;
+
+    // Reflect off walls
+    const bounces = Math.floor(Math.abs(predictY) / H);
+    predictY = bounces % 2 === 0
+      ? Math.abs(predictY % H)
+      : H - Math.abs(predictY % H);
+
+    state.aiTarget = predictY + state.aiErr;
+  } else {
+    // Ball going away — drift back to center
+    state.aiTarget = H / 2;
+  }
+
+  // Refresh error occasionally (simulates imperfect focus)
+  if (Math.random() < 0.02) {
+    state.aiErr = (Math.random() - 0.5) * 60; // ±30px offset
+  }
+
+  const center = p2.y + p2.h / 2;
+  const diff   = state.aiTarget - center;
+  if (Math.abs(diff) > 4) {
+    p2.y += Math.sign(diff) * Math.min(p2.speed, Math.abs(diff));
+  }
+}
+
+function resetBall(direction) {
+  state.ball = {
+    x: W/2, y: H/2,
+    vx: 4 * direction,
+    vy: (Math.random() * 4 - 2),
+    r: 8, speed: 4
+  };
+  state.aiErr = 0;
+}
+
+/* ── DRAW ───────────────────────────────── */
+function draw() {
+  const { ball, p1, p2 } = state;
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  ctx.fillStyle = '#020208';
+  ctx.fillRect(0, 0, W, H);
+
+  // Center line
+  ctx.setLineDash([10, 14]);
+  ctx.strokeStyle = 'rgba(0,245,255,0.12)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(W/2, 0); ctx.lineTo(W/2, H);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Center circle
+  ctx.strokeStyle = 'rgba(0,245,255,0.08)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(W/2, H/2, 60, 0, Math.PI*2);
+  ctx.stroke();
+
+  // Paddle 1 (cyan)
+  drawPaddle(20, p1.y, p1.w, p1.h, '#00f5ff', 'rgba(0,245,255,0.5)');
+
+  // Paddle 2 (magenta)
+  drawPaddle(W - 20 - p2.w, p2.y, p2.w, p2.h, '#ff00aa', 'rgba(255,0,170,0.5)');
+
+  // Ball
+  const grd = ctx.createRadialGradient(ball.x, ball.y, 1, ball.x, ball.y, ball.r*2);
+  grd.addColorStop(0, '#ffffff');
+  grd.addColorStop(0.4, '#00f5ff');
+  grd.addColorStop(1, 'rgba(0,245,255,0)');
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2);
+  ctx.fillStyle = '#fff';
+  ctx.fill();
+
+  // Ball glow
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, ball.r * 2.5, 0, Math.PI*2);
+  ctx.fillStyle = grd;
+  ctx.fill();
+}
+
+function drawPaddle(x, y, w, h, color, glow) {
+  // Glow effect
+  ctx.shadowColor  = color;
+  ctx.shadowBlur   = 18;
+  ctx.fillStyle    = color;
+  ctx.fillRect(x, y, w, h);
+  ctx.shadowBlur   = 0;
+
+  // End caps
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(x, y, w, 3);
+  ctx.fillRect(x, y+h-3, w, 3);
+}
+
+/* ── SCORE & END ────────────────────────── */
+function updateScore() {
+  document.getElementById('s1').textContent = state.p1.score;
+  document.getElementById('s2').textContent = state.p2.score;
+}
+
+function endGame(winner) {
+  running = false;
+  cancelAnimationFrame(animId);
+  const name = winner === 1 ? (mode === 'ai' ? 'You' : 'Player 1')
+                            : (mode === 'ai' ? 'AI' : 'Player 2');
+  showOverlay(`${winner===1?'🏆':'🤖'} ${name} Wins!`, 'Great match!', 'Play Again');
+  // Draw final frame
+  draw();
+  localStorage.setItem('djhub_totalplays',
+    (parseInt(localStorage.getItem('djhub_totalplays')||'0')+1).toString()
+  );
+}
+
+/* ── OVERLAY ────────────────────────────── */
+function showOverlay(title, sub, btnText) {
+  const ov = document.getElementById('overlay');
+  ov.classList.remove('hidden');
+  document.getElementById('overlayTitle').textContent = title;
+  document.getElementById('overlaySub').textContent   = sub;
+  document.getElementById('overlayBtn').textContent   = btnText;
+}
+
+function startGame() {
+  resize();
+  state   = initState();
+  running = true;
+  updateScore();
+  document.getElementById('overlay').classList.add('hidden');
+  if (animId) cancelAnimationFrame(animId);
+  loop();
+}
+
+/* ── MODE ───────────────────────────────── */
+function setMode(m) {
+  mode = m;
+  document.getElementById('btn2p').classList.toggle('active', m==='2p');
+  document.getElementById('btnAI').classList.toggle('active',  m==='ai');
+  document.getElementById('lbl2').textContent = m==='ai' ? 'AI' : 'Player 2';
+  const ctrl2 = document.getElementById('ctrl2');
+  ctrl2.querySelector('h4').textContent = m==='ai' ? '// AI (Right)' : '// Player 2 (Right)';
+  ctrl2.querySelector('p').innerHTML = m==='ai'
+    ? 'Powered by <b>predictive AI</b> with spin reading'
+    : '<span class="key">↑</span> Move Up &nbsp; <span class="key">↓</span> Move Down';
+  if (running) { cancelAnimationFrame(animId); }
+  showOverlay('PING PONG', m==='ai' ? 'You vs AI' : '2 Players · 1 Keyboard', 'START GAME');
+  document.getElementById('overlay').classList.remove('hidden');
+}
+
+/* ── INIT ───────────────────────────────── */
+window.addEventListener('resize', () => {
+  resize();
+  if (!running) { draw(); }
+});
+resize();
+// Draw initial blank frame
+ctx.fillStyle = '#020208'; ctx.fillRect(0, 0, W, H);
+</script>
+</body>
+</html>

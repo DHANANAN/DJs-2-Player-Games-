@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Sword Duels — DJ's Games Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#04040d;--cyan:#00f5ff;--magenta:#ff00aa;--gold:#ffd700;--red:#ff3333;
+  --panel:rgba(0,245,255,.04);--border:rgba(0,245,255,.18);--text:#c8d8ff;--dim:#5a6a8a;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding:1.2rem 1rem;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;z-index:999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;}
+.nav{width:100%;max-width:600px;display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;}
+.back{font-family:'Orbitron',sans-serif;font-size:.6rem;font-weight:700;color:var(--dim);
+  text-decoration:none;border:1px solid var(--dim);padding:.45rem .9rem;letter-spacing:.1em;transition:all .3s;}
+.back:hover{color:var(--cyan);border-color:var(--cyan);}
+.title{font-family:'Press Start 2P',monospace;font-size:.85rem;color:var(--red);
+  text-shadow:0 0 18px rgba(255,51,51,.6);}
+.level-badge{font-family:Orbitron,sans-serif;font-size:.5rem;color:var(--gold);text-shadow:0 0 8px rgba(255,215,0,.6);}
+.scores{width:100%;max-width:600px;display:grid;grid-template-columns:1fr auto 1fr;margin-bottom:.8rem;}
+.sb{text-align:center;padding:.6rem;border:1px solid var(--border);background:var(--panel);}
+.sb+.sb{border-left:none;}
+.sn{font-family:'Orbitron',sans-serif;font-size:1.8rem;font-weight:900;}
+.sn.p1{color:var(--cyan);}
+.sn.p2{color:var(--red);}
+.sn.mid{color:var(--dim);}
+.sl{font-family:'Orbitron',sans-serif;font-size:.5rem;color:var(--dim);letter-spacing:.12em;}
+.cw{position:relative;width:min(600px,96vw);border:1px solid var(--border);background:#020208;margin-bottom:.8rem;}
+.cw::before{content:'';position:absolute;inset:-2px;background:linear-gradient(135deg,var(--red),var(--cyan));z-index:-1;opacity:.4;}
+canvas{display:block;width:100%;}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,4,13,.9);z-index:10;}
+.ov.h{display:none;}
+.ot{font-family:'Press Start 2P',monospace;font-size:clamp(.85rem,3.5vw,1.5rem);color:var(--gold);text-shadow:0 0 28px rgba(255,215,0,.7);text-align:center;margin-bottom:.6rem;}
+.os{font-family:'Orbitron',sans-serif;font-size:.6rem;color:var(--dim);letter-spacing:.12em;margin-bottom:1.4rem;text-align:center;line-height:2;}
+.ob{font-family:'Orbitron',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.2em;padding:.8rem 2rem;background:var(--gold);color:var(--bg);border:none;cursor:pointer;transition:all .25s;}
+.ob:hover{background:#fff;}
+.ctrl{width:100%;max-width:600px;display:grid;grid-template-columns:1fr 1fr;gap:.8rem;}
+.cb{border:1px solid var(--border);background:var(--panel);padding:.8rem 1rem;}
+.cb h4{font-family:'Orbitron',sans-serif;font-size:.55rem;color:var(--cyan);letter-spacing:.15em;margin-bottom:.5rem;}
+.cb p{font-size:.82rem;color:var(--dim);line-height:1.7;}
+.k{display:inline-block;font-family:'Orbitron',sans-serif;font-size:.5rem;padding:.1rem .35rem;border:1px solid var(--border);color:var(--text);background:rgba(255,255,255,.05);}
+</style>
+</head>
+<body>
+<nav class="nav">
+   <a href="../index.html" class="back">← Hub</a>
+   <span class="title">Sword</span>
+   <span class="level-badge" id="lvlBadge">Lv1/10</span>
+</nav>
+<div class="scores">
+   <div class="sb"><div class="sn p1" id="hp1">100</div><div class="sl">You</div></div>
+   <div class="sb"><div class="sn mid">Combat</div><div class="sl">Health</div></div>
+   <div class="sb"><div class="sn p2" id="hp2">100</div><div class="sl">Enemy</div></div>
+</div>
+<div class="cw">
+   <canvas id="c" height="400"></canvas>
+   <div class="ov" id="ov">
+     <div class="ot">SWORD DUEL</div>
+     <div class="os">Master the blade!<br>Arrow Keys to attack</div>
+     <button class="ob" onclick="startGame()">ENGAGE!</button>
+   </div>
+</div>
+<div class="ctrl">
+   <div class="cb"><h4>// You</h4>
+     <p><span class="k">←</span> Attack Left<br><span class="k">→</span> Attack Right<br><span class="k">↑</span> Defend</p></div>
+   <div class="cb"><h4>// AI Opponent</h4>
+     <p>Level <span id="aiLevel">1</span>/10<br>Combo learning enabled</p></div>
+</div>
+
+<script>
+const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
+let W,H;
+const keys={};
+
+const LEVELS=[
+  {aiDmg:8, aiComboChance:0.30, playerMaxHp:100},
+  {aiDmg:9, aiComboChance:0.35, playerMaxHp:100},
+  {aiDmg:10, aiComboChance:0.40, playerMaxHp:105},
+  {aiDmg:11, aiComboChance:0.45, playerMaxHp:105},
+  {aiDmg:12, aiComboChance:0.50, playerMaxHp:110},
+  {aiDmg:13, aiComboChance:0.55, playerMaxHp:110},
+  {aiDmg:14, aiComboChance:0.60, playerMaxHp:115},
+  {aiDmg:15, aiComboChance:0.65, playerMaxHp:115},
+  {aiDmg:16, aiComboChance:0.70, playerMaxHp:120},
+  {aiDmg:17, aiComboChance:0.75, playerMaxHp:120}
+];
+
+let currentLevel=0;
+let player,enemy,gameRunning=false,animId=null;
+let particles=[];
+
+function resize(){
+  W=canvas.offsetWidth;
+  H=400;
+  canvas.width=W;
+  canvas.height=H;
+}
+
+function initGame(){
+  const level=LEVELS[currentLevel];
+  player={x:W/4,y:H/2,hp:level.playerMaxHp,maxHp:level.playerMaxHp,attacking:false,direction:0,animFrame:0,combo:0};
+  enemy={x:3*W/4,y:H/2,hp:100,maxHp:100,attacking:false,direction:0,animFrame:0,lastPlayerCombo:0};
+}
+
+window.addEventListener('keydown',e=>{keys[e.key]=true;});
+window.addEventListener('keyup',e=>{keys[e.key]=false;});
+
+function tick(){
+  if(!gameRunning)return;
+  const level=LEVELS[currentLevel];
+  
+  // Player input
+  if(keys['ArrowLeft']&&!player.attacking){
+    player.attacking=true;
+    player.direction=-1;
+    player.animFrame=0;
+    checkHit(-1);
+  }
+  if(keys['ArrowRight']&&!player.attacking){
+    player.attacking=true;
+    player.direction=1;
+    player.animFrame=0;
+    checkHit(1);
+  }
+  if(keys['ArrowUp']){
+    player.combo=Math.min(player.combo+1,3);
+  }
+  
+  // AI decision
+  if(Math.random()<0.05){
+    if(Math.random()<level.aiComboChance){
+      for(let i=0;i<2;i++){
+        enemy.attacking=true;
+        enemy.direction=Math.random()>0.5?1:-1;
+        enemy.animFrame=0;
+        const dmg=level.aiDmg+Math.floor(Math.random()*4);
+        player.hp=Math.max(0,player.hp-dmg);
+      }
+    }else{
+      enemy.attacking=true;
+      enemy.direction=Math.random()>0.5?1:-1;
+      enemy.animFrame=0;
+      player.hp=Math.max(0,player.hp-level.aiDmg);
+    }
+  }
+  
+  if(player.attacking){
+    player.animFrame++;
+    if(player.animFrame>6) player.attacking=false;
+  }
+  
+  if(enemy.attacking){
+    enemy.animFrame++;
+    if(enemy.animFrame>6) enemy.attacking=false;
+  }
+  
+  document.getElementById('hp1').textContent=Math.max(0,player.hp);
+  document.getElementById('hp2').textContent=enemy.hp;
+  
+  if(player.hp<=0||enemy.hp<=0){
+    endMatch();
+    return;
+  }
+  
+  // Particles
+  particles.forEach(p=>{
+    p.x+=p.vx;
+    p.y+=p.vy;
+    p.life-=0.05;
+  });
+  particles=particles.filter(p=>p.life>0);
+  
+  draw();
+}
+
+function checkHit(dir){
+  const level=LEVELS[currentLevel];
+  if(Math.hypot(player.x-enemy.x,player.y-enemy.y)<120){
+    const dmg=12+level.playerMaxHp*0.05;
+    enemy.hp=Math.max(0,enemy.hp-dmg);
+    createHitEffect(enemy.x,enemy.y,'#ff3333');
+  }
+}
+
+function createHitEffect(x,y,color){
+  for(let i=0;i<6;i++){
+    const angle=Math.random()*Math.PI*2;
+    particles.push({x,y,vx:Math.cos(angle)*3,vy:Math.sin(angle)*3,life:1,color,size:Math.random()*3+1});
+  }
+}
+
+function draw(){
+  ctx.fillStyle='#0a0a2a';
+  ctx.fillRect(0,0,W,H);
+  
+  // Grid background
+  ctx.strokeStyle='rgba(0,245,255,.05)';
+  ctx.lineWidth=1;
+  for(let i=0;i<W;i+=40){
+    ctx.beginPath();
+    ctx.moveTo(i,0);
+    ctx.lineTo(i,H);
+    ctx.stroke();
+  }
+  
+  // Particles
+  particles.forEach(p=>{
+    ctx.globalAlpha=p.life;
+    ctx.fillStyle=p.color;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+    ctx.fill();
+  });
+  ctx.globalAlpha=1;
+  
+  // Player
+  ctx.fillStyle='#00f5ff';
+  ctx.fillRect(player.x-20,player.y-25,40,50);
+  if(player.attacking){
+    ctx.strokeStyle='#ffd700';
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.moveTo(player.x,player.y);
+    ctx.lineTo(player.x+player.direction*60,player.y-20);
+    ctx.stroke();
+  }
+  
+  // Enemy
+  ctx.fillStyle='#ff3333';
+  ctx.fillRect(enemy.x-20,enemy.y-25,40,50);
+  if(enemy.attacking){
+    ctx.strokeStyle='#ffd700';
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.moveTo(enemy.x,enemy.y);
+    ctx.lineTo(enemy.x-enemy.direction*60,enemy.y-20);
+    ctx.stroke();
+  }
+  
+  // HP bars
+  ctx.fillStyle='rgba(0,0,0,.5)';
+  ctx.fillRect(player.x-30,player.y-50,60,8);
+  ctx.fillStyle='#00f5ff';
+  ctx.fillRect(player.x-30,player.y-50,player.hp/player.maxHp*60,8);
+  
+  ctx.fillStyle='rgba(0,0,0,.5)';
+  ctx.fillRect(enemy.x-30,enemy.y-50,60,8);
+  ctx.fillStyle='#ff3333';
+  ctx.fillRect(enemy.x-30,enemy.y-50,enemy.hp/100*60,8);
+}
+
+function startGame(){
+  resize();
+  initGame();
+  gameRunning=true;
+  document.getElementById('ov').classList.add('h');
+  document.getElementById('lvlBadge').textContent=`Lv${currentLevel+1}/10`;
+  document.getElementById('aiLevel').textContent=(currentLevel+1);
+  clearInterval(animId);
+  animId=setInterval(tick,16);
+}
+
+function endMatch(){
+  gameRunning=false;
+  clearInterval(animId);
+  const ov=document.getElementById('ov');
+  ov.classList.remove('h');
+  const won=player.hp>0;
+  ov.querySelector('.ot').textContent=won?'⚔️ Victory!':'💀 Defeat!';
+  ov.querySelector('.os').textContent=`Level ${currentLevel+1}/10 · HP: ${Math.max(0,player.hp)}/${player.maxHp}`;
+  ov.querySelector('.ob').textContent=currentLevel+1<LEVELS.length?'Next Level':'Final Victory!';
+  ov.querySelector('.ob').onclick=()=>{
+    if(won&&currentLevel+1<LEVELS.length){
+      currentLevel++;
+      startGame();
+    }else if(!won){
+      currentLevel=0;
+      startGame();
+    }else{
+      location.href='../index.html';
+    }
+  };
+}
+
+window.addEventListener('resize',()=>{if(!gameRunning)resize();});
+resize();
+ctx.fillStyle='#0a0a2a';
+ctx.fillRect(0,0,W,H);
+</script>
+</body>
+</html>

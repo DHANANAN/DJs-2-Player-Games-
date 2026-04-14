@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Air Hockey — DJ's Games Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#04040d;--cyan:#00f5ff;--magenta:#ff00aa;--gold:#ffd700;--green:#00ff88;
+  --panel:rgba(0,245,255,.04);--border:rgba(0,245,255,.18);--text:#c8d8ff;--dim:#5a6a8a;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding:1.2rem 1rem;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;z-index:999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;}
+.nav{width:100%;max-width:700px;display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}
+.back{font-family:'Orbitron',sans-serif;font-size:.6rem;font-weight:700;color:var(--dim);
+  text-decoration:none;border:1px solid var(--dim);padding:.45rem .9rem;letter-spacing:.1em;transition:all .3s;}
+.back:hover{color:var(--cyan);border-color:var(--cyan);}
+.title{font-family:'Press Start 2P',monospace;font-size:.85rem;color:var(--cyan);
+  text-shadow:0 0 18px rgba(0,245,255,.6);}
+.scores{width:100%;max-width:700px;display:grid;grid-template-columns:1fr auto 1fr;
+  margin-bottom:.8rem;}
+.sb{text-align:center;padding:.6rem;border:1px solid var(--border);background:var(--panel);}
+.sb+.sb{border-left:none;}
+.sn{font-family:'Orbitron',sans-serif;font-size:2rem;font-weight:900;}
+.sn.p1{color:var(--cyan);text-shadow:0 0 14px rgba(0,245,255,.5);}
+.sn.p2{color:var(--magenta);text-shadow:0 0 14px rgba(255,0,170,.5);}
+.sn.mid{color:var(--dim);}
+.sl{font-family:'Orbitron',sans-serif;font-size:.5rem;color:var(--dim);letter-spacing:.12em;}
+.cw{position:relative;width:min(700px,96vw);border:1px solid var(--border);
+  background:#020208;overflow:hidden;margin-bottom:.8rem;}
+.cw::before{content:'';position:absolute;inset:-2px;
+  background:linear-gradient(90deg,var(--cyan),var(--magenta),var(--cyan));z-index:-1;opacity:.4;}
+canvas{display:block;width:100%;}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;background:rgba(4,4,13,.88);z-index:10;}
+.ov.h{display:none;}
+.ot{font-family:'Press Start 2P',monospace;font-size:clamp(.9rem,4vw,1.6rem);
+  color:var(--gold);text-shadow:0 0 28px rgba(255,215,0,.7);text-align:center;margin-bottom:.7rem;}
+.os{font-family:'Orbitron',sans-serif;font-size:.6rem;color:var(--dim);letter-spacing:.15em;margin-bottom:1.5rem;}
+.ob{font-family:'Orbitron',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.2em;
+  padding:.8rem 2rem;background:var(--cyan);color:var(--bg);border:none;cursor:pointer;
+  box-shadow:0 0 22px rgba(0,245,255,.5);transition:all .25s;}
+.ob:hover{background:#fff;}
+.ctrl{width:100%;max-width:700px;display:grid;grid-template-columns:1fr 1fr;gap:.8rem;}
+.cb{border:1px solid var(--border);background:var(--panel);padding:.8rem 1rem;}
+.cb h4{font-family:'Orbitron',sans-serif;font-size:.55rem;color:var(--cyan);letter-spacing:.15em;margin-bottom:.5rem;}
+.cb p{font-size:.82rem;color:var(--dim);line-height:1.7;font-weight:300;}
+.k{display:inline-block;font-family:'Orbitron',sans-serif;font-size:.5rem;
+  padding:.1rem .35rem;border:1px solid var(--border);color:var(--text);background:rgba(255,255,255,.05);}
+.goal-flash{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .2s;z-index:5;}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a href="../index.html" class="back">← Hub</a>
+  <span class="title">Air Hockey</span>
+  <span style="width:70px"></span>
+</nav>
+<div class="scores">
+  <div class="sb"><div class="sn p1" id="s1">0</div><div class="sl">Player 1</div></div>
+  <div class="sb"><div class="sn mid">·</div><div class="sl">First to 7</div></div>
+  <div class="sb"><div class="sn p2" id="s2">0</div><div class="sl">Player 2</div></div>
+</div>
+<div class="cw" id="cw">
+  <canvas id="c" height="400"></canvas>
+  <div class="ov" id="ov">
+    <div class="ot">AIR HOCKEY</div>
+    <div class="os">WASD · Arrow Keys</div>
+    <button class="ob" onclick="start()">START GAME</button>
+  </div>
+  <div class="goal-flash" id="gf"></div>
+</div>
+<div class="ctrl">
+  <div class="cb"><h4>// Player 1 (Blue)</h4>
+    <p><span class="k">W</span>/<span class="k">A</span>/<span class="k">S</span>/<span class="k">D</span> — Move Mallet</p></div>
+  <div class="cb"><h4>// Player 2 (Pink)</h4>
+    <p><span class="k">↑</span>/<span class="k">←</span>/<span class="k">↓</span>/<span class="k">→</span> — Move Mallet</p></div>
+</div>
+
+<script>
+/* ─── AIR HOCKEY ENGINE ───────────────────────────────────
+   Physics: puck has velocity with damping, bounces off walls
+   and mallets using elastic collision math.
+   Mallets are constrained to their half of the rink.
+   Goals at top/bottom of each side wall (not left/right like pong).
+   Actually: goals on LEFT wall (P2 scores) and RIGHT wall (P1 scores)
+   Goal height = center 30% of the wall.
+─────────────────────────────────────────────────────────── */
+const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
+let W,H, running=false, animId=null;
+let score=[0,0];
+const FRICTION=0.99, PUCK_R=14, MALLET_R=30, GOAL_H_RATIO=0.35;
+
+let puck,m1,m2;
+const keys={};
+
+function resize(){
+  W=canvas.offsetWidth; H=400;
+  canvas.width=W; canvas.height=H;
+}
+
+function initState(){
+  puck={x:W/2,y:H/2,vx:(Math.random()>.5?1:-1)*4,vy:(Math.random()-.5)*4,r:PUCK_R};
+  m1={x:MALLET_R+10, y:H/2, r:MALLET_R, vx:0,vy:0};
+  m2={x:W-MALLET_R-10,y:H/2, r:MALLET_R, vx:0,vy:0};
+}
+
+window.addEventListener('keydown',e=>{keys[e.key]=true;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();});
+window.addEventListener('keyup',e=>{keys[e.key]=false;});
+
+const SPD=6;
+function update(){
+  // Mallet 1 (WASD) — left half only
+  let dx1=0,dy1=0;
+  if(keys['w']||keys['W'])dy1=-1;
+  if(keys['s']||keys['S'])dy1=1;
+  if(keys['a']||keys['A'])dx1=-1;
+  if(keys['d']||keys['D'])dx1=1;
+  m1.vx=dx1*SPD; m1.vy=dy1*SPD;
+  m1.x=Math.max(m1.r, Math.min(W/2-m1.r, m1.x+m1.vx));
+  m1.y=Math.max(m1.r, Math.min(H-m1.r, m1.y+m1.vy));
+
+  // Mallet 2 (Arrows) — right half only
+  let dx2=0,dy2=0;
+  if(keys['ArrowUp'])dy2=-1;
+  if(keys['ArrowDown'])dy2=1;
+  if(keys['ArrowLeft'])dx2=-1;
+  if(keys['ArrowRight'])dx2=1;
+  m2.vx=dx2*SPD; m2.vy=dy2*SPD;
+  m2.x=Math.max(W/2+m2.r, Math.min(W-m2.r, m2.x+m2.vx));
+  m2.y=Math.max(m2.r, Math.min(H-m2.r, m2.y+m2.vy));
+
+  // Puck movement
+  puck.x+=puck.vx; puck.y+=puck.vy;
+  puck.vx*=FRICTION; puck.vy*=FRICTION;
+
+  // Wall bounce (top/bottom)
+  if(puck.y-puck.r<=0){puck.y=puck.r;puck.vy=Math.abs(puck.vy);}
+  if(puck.y+puck.r>=H){puck.y=H-puck.r;puck.vy=-Math.abs(puck.vy);}
+
+  // Goal zones: center GOAL_H_RATIO of left and right walls
+  const gTop=H*(1-GOAL_H_RATIO)/2, gBot=H*(1+GOAL_H_RATIO)/2;
+  const inGoalZone = puck.y>gTop && puck.y<gBot;
+
+  if(puck.x-puck.r<=0){
+    if(inGoalZone){ goal(1); return; }
+    else{ puck.x=puck.r; puck.vx=Math.abs(puck.vx); }
+  }
+  if(puck.x+puck.r>=W){
+    if(inGoalZone){ goal(0); return; }
+    else{ puck.x=W-puck.r; puck.vx=-Math.abs(puck.vx); }
+  }
+
+  // Mallet-puck collision (elastic)
+  malletCollide(m1); malletCollide(m2);
+
+  // Speed cap
+  const spd=Math.hypot(puck.vx,puck.vy);
+  if(spd>18){puck.vx=puck.vx/spd*18;puck.vy=puck.vy/spd*18;}
+  if(spd<0.1){puck.vx=(Math.random()-.5)*2;puck.vy=(Math.random()-.5)*2;}
+}
+
+function malletCollide(m){
+  const dx=puck.x-m.x, dy=puck.y-m.y;
+  const dist=Math.hypot(dx,dy);
+  const minDist=puck.r+m.r;
+  if(dist<minDist && dist>0){
+    const nx=dx/dist, ny=dy/dist;
+    // Separate
+    const overlap=minDist-dist;
+    puck.x+=nx*overlap; puck.y+=ny*overlap;
+    // Transfer velocity from mallet to puck
+    const relVx=puck.vx-m.vx, relVy=puck.vy-m.vy;
+    const dot=relVx*nx+relVy*ny;
+    if(dot<0){
+      puck.vx-=1.8*dot*nx + m.vx*.4;
+      puck.vy-=1.8*dot*ny + m.vy*.4;
+    }
+  }
+}
+
+function goal(scorer){
+  score[scorer]++;
+  document.getElementById('s1').textContent=score[0];
+  document.getElementById('s2').textContent=score[1];
+  flashGoal(scorer);
+  if(score[scorer]>=7){ endGame(scorer); return; }
+  setTimeout(()=>{ initState(); },800);
+}
+
+function flashGoal(who){
+  const gf=document.getElementById('gf');
+  gf.style.background=who===0?'rgba(0,245,255,.15)':'rgba(255,0,170,.15)';
+  gf.style.opacity='1';
+  setTimeout(()=>gf.style.opacity='0',300);
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#020208'; ctx.fillRect(0,0,W,H);
+
+  // Rink lines
+  ctx.strokeStyle='rgba(0,245,255,.08)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(W/2,H/2,H*.35,0,Math.PI*2); ctx.stroke();
+  ctx.strokeStyle='rgba(0,245,255,.12)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.stroke();
+
+  // Center dot
+  ctx.beginPath(); ctx.arc(W/2,H/2,6,0,Math.PI*2);
+  ctx.fillStyle='rgba(0,245,255,.25)'; ctx.fill();
+
+  // Goal zones
+  const gTop=H*(1-GOAL_H_RATIO)/2, gBot=H*(1+GOAL_H_RATIO)/2;
+  // Left goal
+  ctx.fillStyle='rgba(0,245,255,.08)';
+  ctx.fillRect(0,gTop,8,gBot-gTop);
+  ctx.strokeStyle='rgba(0,245,255,.5)'; ctx.lineWidth=2;
+  ctx.strokeRect(0,gTop,8,gBot-gTop);
+  // Right goal
+  ctx.fillStyle='rgba(255,0,170,.08)';
+  ctx.fillRect(W-8,gTop,8,gBot-gTop);
+  ctx.strokeStyle='rgba(255,0,170,.5)';
+  ctx.strokeRect(W-8,gTop,8,gBot-gTop);
+
+  // Goal arrows/labels
+  ctx.fillStyle='rgba(0,245,255,.5)';
+  ctx.font='bold 9px Orbitron'; ctx.textAlign='left';
+  ctx.fillText('◀ GOAL',6,gTop-5);
+  ctx.fillStyle='rgba(255,0,170,.5)';
+  ctx.textAlign='right';
+  ctx.fillText('GOAL ▶',W-6,gTop-5);
+
+  // Mallet 1 (cyan)
+  drawMallet(m1,'#00f5ff','rgba(0,245,255,.35)');
+  // Mallet 2 (magenta)
+  drawMallet(m2,'#ff00aa','rgba(255,0,170,.35)');
+  // Puck
+  drawPuck();
+}
+
+function drawMallet(m,col,glow){
+  ctx.shadowColor=col; ctx.shadowBlur=20;
+  ctx.beginPath(); ctx.arc(m.x,m.y,m.r,0,Math.PI*2);
+  ctx.fillStyle=glow; ctx.fill();
+  ctx.strokeStyle=col; ctx.lineWidth=3; ctx.stroke();
+  // Inner ring
+  ctx.beginPath(); ctx.arc(m.x,m.y,m.r*.4,0,Math.PI*2);
+  ctx.fillStyle=col; ctx.fill();
+  ctx.shadowBlur=0;
+}
+
+function drawPuck(){
+  const g=ctx.createRadialGradient(puck.x,puck.y,1,puck.x,puck.y,puck.r*2);
+  g.addColorStop(0,'#fff'); g.addColorStop(.5,'#00f5ff'); g.addColorStop(1,'rgba(0,245,255,0)');
+  ctx.shadowColor='#00f5ff'; ctx.shadowBlur=15;
+  ctx.beginPath(); ctx.arc(puck.x,puck.y,puck.r,0,Math.PI*2);
+  ctx.fillStyle='#e0f8ff'; ctx.fill();
+  ctx.beginPath(); ctx.arc(puck.x,puck.y,puck.r*2.5,0,Math.PI*2);
+  ctx.fillStyle=g; ctx.fill();
+  ctx.shadowBlur=0;
+}
+
+function loop(){ update(); draw(); animId=requestAnimationFrame(loop); }
+
+function start(){
+  resize(); initState(); running=true; score=[0,0];
+  document.getElementById('s1').textContent='0';
+  document.getElementById('s2').textContent='0';
+  document.getElementById('ov').classList.add('h');
+  if(animId)cancelAnimationFrame(animId);
+  loop();
+}
+
+function endGame(w){
+  running=false; cancelAnimationFrame(animId);
+  const ov=document.getElementById('ov');
+  ov.classList.remove('h');
+  ov.querySelector('.ot').textContent=`🏆 Player ${w+1} Wins!`;
+  ov.querySelector('.os').textContent=`Final: ${score[0]} – ${score[1]}`;
+  ov.querySelector('.ob').textContent='Play Again';
+  ov.querySelector('.ob').onclick=()=>{score=[0,0];start();};
+}
+window.addEventListener('resize',()=>{if(running){resize();}});
+resize(); ctx.fillStyle='#020208'; ctx.fillRect(0,0,W,H);
+</script>
+</body>
+</html>

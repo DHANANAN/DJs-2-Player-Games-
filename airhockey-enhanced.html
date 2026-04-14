@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Air Hockey — DJ's Games Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#04040d;--cyan:#00f5ff;--magenta:#ff00aa;--gold:#ffd700;--green:#00ff88;
+  --panel:rgba(0,245,255,.04);--border:rgba(0,245,255,.18);--text:#c8d8ff;--dim:#5a6a8a;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding:1.2rem 1rem;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;z-index:999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;}
+.nav{width:100%;max-width:700px;display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}
+.back{font-family:'Orbitron',sans-serif;font-size:.6rem;font-weight:700;color:var(--dim);
+  text-decoration:none;border:1px solid var(--dim);padding:.45rem .9rem;letter-spacing:.1em;transition:all .3s;}
+.back:hover{color:var(--cyan);border-color:var(--cyan);}
+.title{font-family:'Press Start 2P',monospace;font-size:.85rem;color:var(--cyan);
+  text-shadow:0 0 18px rgba(0,245,255,.6);}
+.level-badge{font-family:Orbitron,sans-serif;font-size:.5rem;color:var(--gold);text-shadow:0 0 8px rgba(255,215,0,.6);}
+.scores{width:100%;max-width:700px;display:grid;grid-template-columns:1fr auto 1fr;
+  margin-bottom:.8rem;}
+.sb{text-align:center;padding:.6rem;border:1px solid var(--border);background:var(--panel);}
+.sb+.sb{border-left:none;}
+.sn{font-family:'Orbitron',sans-serif;font-size:2rem;font-weight:900;}
+.sn.p1{color:var(--cyan);text-shadow:0 0 14px rgba(0,245,255,.5);}
+.sn.p2{color:var(--magenta);text-shadow:0 0 14px rgba(255,0,170,.5);}
+.sn.mid{color:var(--dim);}
+.sl{font-family:'Orbitron',sans-serif;font-size:.5rem;color:var(--dim);letter-spacing:.12em;}
+.cw{position:relative;width:min(700px,96vw);border:1px solid var(--border);
+  background:#020208;overflow:hidden;margin-bottom:.8rem;}
+.cw::before{content:'';position:absolute;inset:-2px;
+  background:linear-gradient(90deg,var(--cyan),var(--magenta),var(--cyan));z-index:-1;opacity:.4;}
+canvas{display:block;width:100%;}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;background:rgba(4,4,13,.88);z-index:10;}
+.ov.h{display:none;}
+.ot{font-family:'Press Start 2P',monospace;font-size:clamp(.9rem,4vw,1.6rem);
+  color:var(--gold);text-shadow:0 0 28px rgba(255,215,0,.7);text-align:center;margin-bottom:.7rem;}
+.os{font-family:'Orbitron',sans-serif;font-size:.6rem;color:var(--dim);letter-spacing:.15em;margin-bottom:1.5rem;}
+.ob{font-family:'Orbitron',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.2em;
+  padding:.8rem 2rem;background:var(--cyan);color:var(--bg);border:none;cursor:pointer;
+  box-shadow:0 0 22px rgba(0,245,255,.5);transition:all .25s;}
+.ob:hover{background:#fff;}
+.ctrl{width:100%;max-width:700px;display:grid;grid-template-columns:1fr 1fr;gap:.8rem;}
+.cb{border:1px solid var(--border);background:var(--panel);padding:.8rem 1rem;}
+.cb h4{font-family:'Orbitron',sans-serif;font-size:.55rem;color:var(--cyan);letter-spacing:.15em;margin-bottom:.5rem;}
+.cb p{font-size:.82rem;color:var(--dim);line-height:1.7;font-weight:300;}
+.k{display:inline-block;font-family:'Orbitron',sans-serif;font-size:.5rem;
+  padding:.1rem .35rem;border:1px solid var(--border);color:var(--text);background:rgba(255,255,255,.05);}
+</style>
+</head>
+<body>
+<nav class="nav">
+   <a href="../index.html" class="back">← Hub</a>
+   <span class="title">Air Hockey</span>
+   <span class="level-badge" id="lvlBadge">Lv1/10</span>
+</nav>
+<div class="scores">
+   <div class="sb"><div class="sn p1" id="s1">0</div><div class="sl">Player 1</div></div>
+   <div class="sb"><div class="sn mid">·</div><div class="sl" id="targetScore">First to 7</div></div>
+   <div class="sb"><div class="sn p2" id="s2">0</div><div class="sl" id="p2Label">AI</div></div>
+</div>
+<div class="cw" id="cw">
+   <canvas id="c" height="400"></canvas>
+   <div class="ov" id="ov">
+     <div class="ot">AIR HOCKEY</div>
+     <div class="os">Challenge Mode · 10 Levels</div>
+     <button class="ob" onclick="start()">KICK OFF</button>
+   </div>
+</div>
+<div class="ctrl">
+   <div class="cb"><h4>// Player 1 (Blue)</h4>
+     <p><span class="k">W</span>/<span class="k">A</span>/<span class="k">S</span>/<span class="k">D</span> — Move Mallet</p></div>
+   <div class="cb"><h4>// AI Opponent</h4>
+     <p>Level <span id="aiLevel">1</span>/10 · Predictive tracking</p></div>
+</div>
+
+<script>
+/* AIR HOCKEY ENHANCED
+   - 10 difficulty levels with escalating challenge
+   - AI opponent with difficulty-based prediction
+   - Progressive puck speed and goal sizes
+   - Visual effects and particle system
+*/
+
+const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
+let W,H, running=false, animId=null;
+let score=[0,0];
+let particles=[];
+
+const LEVELS=[
+  {goalH:0.35, puckR:14, malletR:30, puckSpeed:4, friction:0.99, aiSpeed:5, aiAccuracy:0.50},
+  {goalH:0.33, puckR:13.5, malletR:29, puckSpeed:4.3, friction:0.989, aiSpeed:5.3, aiAccuracy:0.55},
+  {goalH:0.31, puckR:13, malletR:28, puckSpeed:4.6, friction:0.988, aiSpeed:5.6, aiAccuracy:0.60},
+  {goalH:0.29, puckR:12.5, malletR:27, puckSpeed:4.9, friction:0.987, aiSpeed:5.9, aiAccuracy:0.65},
+  {goalH:0.27, puckR:12, malletR:26, puckSpeed:5.2, friction:0.986, aiSpeed:6.2, aiAccuracy:0.70},
+  {goalH:0.25, puckR:11.5, malletR:25, puckSpeed:5.5, friction:0.985, aiSpeed:6.5, aiAccuracy:0.75},
+  {goalH:0.23, puckR:11, malletR:24, puckSpeed:5.8, friction:0.984, aiSpeed:6.8, aiAccuracy:0.80},
+  {goalH:0.21, puckR:10.5, malletR:23, puckSpeed:6.1, friction:0.983, aiSpeed:7.1, aiAccuracy:0.85},
+  {goalH:0.19, puckR:10, malletR:22, puckSpeed:6.4, friction:0.982, aiSpeed:7.4, aiAccuracy:0.90},
+  {goalH:0.17, puckR:9.5, malletR:21, puckSpeed:6.7, friction:0.981, aiSpeed:7.7, aiAccuracy:0.95}
+];
+
+let currentLevel=0;
+let puck,m1,m2;
+const keys={};
+
+function resize(){
+  W=canvas.offsetWidth; H=400;
+  canvas.width=W; canvas.height=H;
+}
+
+function initState(){
+  const level=LEVELS[currentLevel];
+  puck={x:W/2,y:H/2,vx:(Math.random()>.5?1:-1)*level.puckSpeed,vy:(Math.random()-.5)*level.puckSpeed,r:level.puckR};
+  m1={x:level.malletR+10, y:H/2, r:level.malletR, vx:0,vy:0};
+  m2={x:W-level.malletR-10,y:H/2, r:level.malletR, vx:0,vy:0};
+}
+
+window.addEventListener('keydown',e=>{keys[e.key]=true;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();});
+window.addEventListener('keyup',e=>{keys[e.key]=false;});
+
+function update(){
+  const level=LEVELS[currentLevel];
+  const SPD=level.aiSpeed;
+
+  // Player 1 (WASD) — left half
+  let dx1=0,dy1=0;
+  if(keys['w']||keys['W'])dy1=-1;
+  if(keys['s']||keys['S'])dy1=1;
+  if(keys['a']||keys['A'])dx1=-1;
+  if(keys['d']||keys['D'])dx1=1;
+  m1.vx=dx1*SPD; m1.vy=dy1*SPD;
+  m1.x=Math.max(m1.r, Math.min(W/2-m1.r, m1.x+m1.vx));
+  m1.y=Math.max(m1.r, Math.min(H-m1.r, m1.y+m1.vy));
+
+  // AI opponent — right half
+  aiMove(m2, puck, level);
+
+  // Puck movement
+  puck.x+=puck.vx; puck.y+=puck.vy;
+  puck.vx*=level.friction; puck.vy*=level.friction;
+
+  // Wall bounce
+  if(puck.y-puck.r<=0){puck.y=puck.r;puck.vy=Math.abs(puck.vy);}
+  if(puck.y+puck.r>=H){puck.y=H-puck.r;puck.vy=-Math.abs(puck.vy);}
+
+  // Goal zones
+  const gTop=H*(1-level.goalH)/2, gBot=H*(1+level.goalH)/2;
+  const inGoalZone = puck.y>gTop && puck.y<gBot;
+
+  if(puck.x-puck.r<=0){
+    if(inGoalZone){ goal(1); return; }
+    else{ puck.x=puck.r; puck.vx=Math.abs(puck.vx); }
+  }
+  if(puck.x+puck.r>=W){
+    if(inGoalZone){ goal(0); return; }
+    else{ puck.x=W-puck.r; puck.vx=-Math.abs(puck.vx); }
+  }
+
+  // Collisions
+  malletCollide(m1); malletCollide(m2);
+
+  // Speed cap
+  const spd=Math.hypot(puck.vx,puck.vy);
+  if(spd>18){puck.vx=puck.vx/spd*18;puck.vy=puck.vy/spd*18;}
+  if(spd<0.1){puck.vx=(Math.random()-.5)*2;puck.vy=(Math.random()-.5)*2;}
+
+  updateParticles();
+}
+
+function aiMove(m2, puck, level){
+  const SPD=level.aiSpeed;
+  // Predict puck position when it reaches AI side
+  if(puck.vx>0){
+    const distX=(W-20-m2.r)-puck.x;
+    const timeToArrive=Math.max(0.1, distX/Math.max(0.1, puck.vx));
+    let predictY=puck.y+puck.vy*timeToArrive;
+    
+    // Simple bounce simulation
+    while(predictY<0||predictY>H){
+      if(predictY<0) predictY=-predictY;
+      if(predictY>H) predictY=2*H-predictY;
+    }
+    
+    // Add error based on difficulty
+    const err=(1-level.aiAccuracy)*50;
+    predictY+=Math.random()*err-err/2;
+    
+    // Move toward predicted position
+    const diff=predictY-m2.y;
+    if(Math.abs(diff)>3){
+      m2.vy=Math.sign(diff)*SPD;
+    }else{
+      m2.vy=0;
+    }
+  }else{
+    m2.vy=0;
+  }
+  
+  m2.x=Math.max(W/2+m2.r, Math.min(W-m2.r, m2.x));
+  m2.y=Math.max(m2.r, Math.min(H-m2.r, m2.y+m2.vy));
+}
+
+function malletCollide(m){
+  const dx=puck.x-m.x, dy=puck.y-m.y;
+  const dist=Math.hypot(dx,dy);
+  const minDist=puck.r+m.r;
+  if(dist<minDist && dist>0){
+    const nx=dx/dist, ny=dy/dist;
+    const overlap=minDist-dist;
+    puck.x+=nx*overlap; puck.y+=ny*overlap;
+    const relVx=puck.vx-m.vx, relVy=puck.vy-m.vy;
+    const dot=relVx*nx+relVy*ny;
+    if(dot<0){
+      puck.vx-=1.8*dot*nx + m.vx*.4;
+      puck.vy-=1.8*dot*ny + m.vy*.4;
+      createMalletParticles(m);
+    }
+  }
+}
+
+function createMalletParticles(m){
+  for(let i=0;i<8;i++){
+    const angle=Math.random()*Math.PI*2;
+    const speed=Math.random()*3+2;
+    particles.push({
+      x:m.x, y:m.y,
+      vx:Math.cos(angle)*speed,
+      vy:Math.sin(angle)*speed,
+      life:1,
+      size:Math.random()*2+1,
+      color: m===m1?'#00f5ff':'#ff00aa'
+    });
+  }
+}
+
+function updateParticles(){
+  particles=particles.filter(p=>{
+    p.x+=p.vx;
+    p.y+=p.vy;
+    p.vy+=0.1;
+    p.life-=0.03;
+    return p.life>0;
+  });
+}
+
+function goal(scorer){
+  score[scorer]++;
+  document.getElementById('s1').textContent=score[0];
+  document.getElementById('s2').textContent=score[1];
+  const level=LEVELS[currentLevel];
+  const winScore=Math.max(4, 7-Math.floor(currentLevel/3));
+  if(score[scorer]>=winScore){ endLevel(scorer); return; }
+  setTimeout(()=>{ initState(); },800);
+}
+
+function draw(){
+  const level=LEVELS[currentLevel];
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#020208'; ctx.fillRect(0,0,W,H);
+
+  // Rink
+  ctx.strokeStyle='rgba(0,245,255,.08)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(W/2,H/2,H*.35,0,Math.PI*2); ctx.stroke();
+  ctx.strokeStyle='rgba(0,245,255,.12)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.stroke();
+  ctx.beginPath(); ctx.arc(W/2,H/2,6,0,Math.PI*2);
+  ctx.fillStyle='rgba(0,245,255,.25)'; ctx.fill();
+
+  // Goal zones
+  const gTop=H*(1-level.goalH)/2, gBot=H*(1+level.goalH)/2;
+  ctx.fillStyle='rgba(0,245,255,.08)';
+  ctx.fillRect(0,gTop,8,gBot-gTop);
+  ctx.strokeStyle='rgba(0,245,255,.5)'; ctx.lineWidth=2;
+  ctx.strokeRect(0,gTop,8,gBot-gTop);
+  ctx.fillStyle='rgba(255,0,170,.08)';
+  ctx.fillRect(W-8,gTop,8,gBot-gTop);
+  ctx.strokeStyle='rgba(255,0,170,.5)';
+  ctx.strokeRect(W-8,gTop,8,gBot-gTop);
+
+  // Mallets
+  drawMallet(m1,'#00f5ff','rgba(0,245,255,.35)');
+  drawMallet(m2,'#ff00aa','rgba(255,0,170,.35)');
+  drawPuck();
+  
+  // Particles
+  particles.forEach(p=>{
+    ctx.globalAlpha=p.life;
+    ctx.fillStyle=p.color;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+    ctx.fill();
+  });
+  ctx.globalAlpha=1;
+}
+
+function drawMallet(m,col,glow){
+  ctx.shadowColor=col; ctx.shadowBlur=20;
+  ctx.beginPath(); ctx.arc(m.x,m.y,m.r,0,Math.PI*2);
+  ctx.fillStyle=glow; ctx.fill();
+  ctx.strokeStyle=col; ctx.lineWidth=3; ctx.stroke();
+  ctx.beginPath(); ctx.arc(m.x,m.y,m.r*.4,0,Math.PI*2);
+  ctx.fillStyle=col; ctx.fill();
+  ctx.shadowBlur=0;
+}
+
+function drawPuck(){
+  const g=ctx.createRadialGradient(puck.x,puck.y,1,puck.x,puck.y,puck.r*2);
+  g.addColorStop(0,'#fff'); g.addColorStop(.5,'#00f5ff'); g.addColorStop(1,'rgba(0,245,255,0)');
+  ctx.shadowColor='#00f5ff'; ctx.shadowBlur=15;
+  ctx.beginPath(); ctx.arc(puck.x,puck.y,puck.r,0,Math.PI*2);
+  ctx.fillStyle='#e0f8ff'; ctx.fill();
+  ctx.beginPath(); ctx.arc(puck.x,puck.y,puck.r*2.5,0,Math.PI*2);
+  ctx.fillStyle=g; ctx.fill();
+  ctx.shadowBlur=0;
+}
+
+function loop(){ update(); draw(); animId=requestAnimationFrame(loop); }
+
+function start(){
+  resize(); initState(); running=true; score=[0,0]; particles=[];
+  document.getElementById('s1').textContent='0';
+  document.getElementById('s2').textContent='0';
+  const level=LEVELS[currentLevel];
+  document.getElementById('targetScore').textContent=`First to ${Math.max(4, 7-Math.floor(currentLevel/3))}`;
+  document.getElementById('aiLevel').textContent=(currentLevel+1);
+  document.getElementById('ov').classList.add('h');
+  if(animId)cancelAnimationFrame(animId);
+  loop();
+}
+
+function endLevel(w){
+  running=false; cancelAnimationFrame(animId);
+  const ov=document.getElementById('ov');
+  ov.classList.remove('h');
+  const winner=w===0?'🏆 You Win!':'🤖 AI Wins!';
+  const nextLevel=currentLevel+1;
+  const canProgress=nextLevel<LEVELS.length;
+  ov.querySelector('.ot').textContent=winner;
+  ov.querySelector('.os').textContent=`Level ${currentLevel+1}/10 · Final: ${score[0]} – ${score[1]}`;
+  ov.querySelector('.ob').textContent=canProgress?'Next Level':'Final Victory!';
+  ov.querySelector('.ob').onclick=()=>{
+    if(canProgress){
+      currentLevel++;
+      document.getElementById('lvlBadge').textContent=`Lv${currentLevel+1}/10`;
+      start();
+    } else {
+      location.href='../index.html';
+    }
+  };
+}
+
+window.addEventListener('resize',()=>{if(running){resize();}});
+resize(); ctx.fillStyle='#020208'; ctx.fillRect(0,0,W,H);
+</script>
+</body>
+</html>

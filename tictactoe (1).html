@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tic Tac Toe — DJ's Games Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:      #04040d;
+      --cyan:    #00f5ff;
+      --magenta: #ff00aa;
+      --gold:    #ffd700;
+      --green:   #00ff88;
+      --red:     #ff4455;
+      --panel:   rgba(0,245,255,0.04);
+      --border:  rgba(0,245,255,0.18);
+      --text:    #c8d8ff;
+      --dim:     #5a6a8a;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 2rem 1rem;
+      overflow-x: hidden;
+    }
+
+    /* scanlines */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 999;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px
+      );
+      pointer-events: none;
+    }
+
+    /* ── HEADER ──────────────────────────── */
+    .top-nav {
+      width: 100%; max-width: 600px;
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 2rem;
+    }
+    .back {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.6rem; font-weight: 700;
+      color: var(--dim); text-decoration: none;
+      border: 1px solid var(--dim); padding: 0.5rem 1rem;
+      letter-spacing: 0.1em; transition: all 0.3s;
+    }
+    .back:hover { color: var(--cyan); border-color: var(--cyan); }
+    .game-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.9rem; color: var(--cyan);
+      text-shadow: 0 0 20px rgba(0,245,255,0.6);
+    }
+
+    /* ── MODE SELECTOR ───────────────────── */
+    .mode-row {
+      display: flex; gap: 0.6rem; margin-bottom: 2rem;
+    }
+    .mode-btn {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.6rem; font-weight: 700;
+      letter-spacing: 0.15em; text-transform: uppercase;
+      padding: 0.6rem 1.4rem;
+      background: transparent; color: var(--dim);
+      border: 1px solid var(--dim); cursor: pointer;
+      transition: all 0.25s;
+    }
+    .mode-btn.active {
+      color: var(--bg); background: var(--cyan);
+      border-color: var(--cyan);
+      box-shadow: 0 0 20px rgba(0,245,255,0.4);
+    }
+
+    /* ── DIFFICULTY ──────────────────────── */
+    .diff-row {
+      display: flex; gap: 0.5rem; margin-bottom: 1.5rem;
+      transition: all 0.3s;
+    }
+    .diff-row.hidden { opacity: 0; pointer-events: none; height: 0; margin: 0; overflow: hidden; }
+    .diff-btn {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.55rem; font-weight: 700;
+      letter-spacing: 0.1em; padding: 0.4rem 1rem;
+      background: transparent; cursor: pointer;
+      border: 1px solid; transition: all 0.25s;
+    }
+    .diff-easy   { color: var(--green);   border-color: var(--green); }
+    .diff-medium { color: var(--gold);    border-color: var(--gold);  }
+    .diff-hard   { color: var(--red);     border-color: var(--red);   }
+    .diff-btn.active.diff-easy   { background: var(--green);   color: var(--bg); box-shadow: 0 0 16px rgba(0,255,136,0.4); }
+    .diff-btn.active.diff-medium { background: var(--gold);    color: var(--bg); box-shadow: 0 0 16px rgba(255,215,0,0.4); }
+    .diff-btn.active.diff-hard   { background: var(--red);     color: #fff;      box-shadow: 0 0 16px rgba(255,68,85,0.4); }
+
+    /* ── STATUS BAR ──────────────────────── */
+    .status-bar {
+      width: 100%; max-width: 420px;
+      display: flex; justify-content: space-between; align-items: center;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      padding: 0.8rem 1.2rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .player-chip {
+      display: flex; align-items: center; gap: 0.6rem;
+    }
+    .player-sym {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 1rem;
+      transition: all 0.3s;
+    }
+    .x-sym { color: var(--cyan);    text-shadow: 0 0 12px rgba(0,245,255,0.8); }
+    .o-sym { color: var(--magenta); text-shadow: 0 0 12px rgba(255,0,170,0.8); }
+    .player-name {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.6rem; font-weight: 700;
+      letter-spacing: 0.1em; color: var(--dim);
+    }
+    .player-chip.active .player-name { color: #fff; }
+    .player-chip.active .player-sym  { transform: scale(1.2); }
+
+    .turn-label {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.55rem; color: var(--gold);
+      animation: blink 1.2s ease infinite;
+    }
+    @keyframes blink {
+      0%,100% { opacity: 1; } 50% { opacity: 0.3; }
+    }
+
+    /* ── SCORE STRIP ─────────────────────── */
+    .score-strip {
+      width: 100%; max-width: 420px;
+      display: grid; grid-template-columns: 1fr auto 1fr;
+      gap: 0; margin-bottom: 1.8rem;
+    }
+    .score-box {
+      text-align: center; padding: 0.8rem;
+      border: 1px solid var(--border);
+      background: var(--panel);
+    }
+    .score-box + .score-box { border-left: none; }
+    .score-val {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.6rem; font-weight: 900;
+      transition: all 0.3s;
+    }
+    .score-val.x { color: var(--cyan);    text-shadow: 0 0 16px rgba(0,245,255,0.5); }
+    .score-val.o { color: var(--magenta); text-shadow: 0 0 16px rgba(255,0,170,0.5); }
+    .score-val.d { color: var(--dim); }
+    .score-lbl {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.5rem; letter-spacing: 0.15em;
+      color: var(--dim); text-transform: uppercase;
+      margin-top: 0.2rem;
+    }
+
+    /* ── BOARD ───────────────────────────── */
+    .board-wrap {
+      position: relative;
+      width: min(420px, 92vw);
+      margin-bottom: 1.8rem;
+    }
+
+    /* glowing outer border */
+    .board-wrap::before {
+      content: '';
+      position: absolute; inset: -2px;
+      background: linear-gradient(135deg, var(--cyan), var(--magenta), var(--cyan));
+      z-index: -1;
+      border-radius: 2px;
+      opacity: 0.5;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3px;
+      background: rgba(0,245,255,0.12);
+      padding: 3px;
+      width: 100%;
+    }
+
+    .cell {
+      aspect-ratio: 1;
+      background: #080818;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.2s;
+    }
+    .cell:hover:not(.taken) { background: rgba(0,245,255,0.07); }
+    .cell.taken { cursor: default; }
+
+    /* hover ghost */
+    .cell:not(.taken)::after {
+      content: attr(data-ghost);
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(1.8rem, 8vw, 3.5rem);
+      color: rgba(0,245,255,0.12);
+      position: absolute;
+    }
+
+    .cell-inner {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(1.8rem, 8vw, 3.5rem);
+      z-index: 1;
+      transform: scale(0);
+      transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .cell-inner.show  { transform: scale(1); }
+    .cell-inner.x-sym { color: var(--cyan);    text-shadow: 0 0 20px rgba(0,245,255,0.8); }
+    .cell-inner.o-sym { color: var(--magenta); text-shadow: 0 0 20px rgba(255,0,170,0.8); }
+
+    /* win highlight */
+    .cell.win-cell { background: rgba(255,215,0,0.08); }
+    .cell.win-cell .cell-inner {
+      color: var(--gold) !important;
+      text-shadow: 0 0 24px rgba(255,215,0,0.8) !important;
+    }
+
+    /* win line SVG overlay */
+    .win-line {
+      position: absolute; inset: 3px;
+      pointer-events: none;
+    }
+    .win-line line {
+      stroke: var(--gold);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-dasharray: 600;
+      stroke-dashoffset: 600;
+      animation: drawLine 0.4s 0.1s ease forwards;
+    }
+    @keyframes drawLine {
+      to { stroke-dashoffset: 0; }
+    }
+
+    /* ── RESULT OVERLAY ──────────────────── */
+    .result-overlay {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: rgba(4,4,13,0.88);
+      z-index: 10;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.35s;
+    }
+    .result-overlay.show { opacity: 1; pointer-events: all; }
+
+    .result-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(0.9rem, 4vw, 1.5rem);
+      text-align: center;
+      margin-bottom: 0.8rem;
+      animation: none;
+    }
+    .result-title.win { color: var(--gold); text-shadow: 0 0 30px rgba(255,215,0,0.7); }
+    .result-title.draw { color: var(--dim); }
+
+    .result-sub {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.65rem; letter-spacing: 0.15em;
+      color: var(--dim); margin-bottom: 1.5rem;
+    }
+
+    .btn-rematch {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.65rem; font-weight: 700;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      padding: 0.8rem 2rem; cursor: pointer;
+      background: var(--gold); color: var(--bg);
+      border: none;
+      box-shadow: 0 0 24px rgba(255,215,0,0.4);
+      transition: all 0.25s;
+    }
+    .btn-rematch:hover {
+      background: #fff;
+      box-shadow: 0 0 40px rgba(255,215,0,0.7);
+    }
+
+    /* ── THINKING INDICATOR ──────────────── */
+    .thinking {
+      display: none;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.65rem; letter-spacing: 0.15em;
+      color: var(--magenta);
+      margin-bottom: 1rem;
+      animation: pulse 0.8s ease infinite alternate;
+    }
+    .thinking.show { display: block; }
+    @keyframes pulse {
+      from { opacity: 0.4; } to { opacity: 1; }
+    }
+
+    /* ── BOTTOM ACTIONS ──────────────────── */
+    .actions { display: flex; gap: 0.8rem; margin-top: 0.5rem; }
+    .action-btn {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.6rem; font-weight: 700;
+      letter-spacing: 0.12em;
+      padding: 0.6rem 1.4rem; cursor: pointer;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--dim); transition: all 0.25s;
+    }
+    .action-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+
+    /* ── HOW TO PLAY ─────────────────────── */
+    .how-to {
+      width: 100%; max-width: 420px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      padding: 1.2rem 1.5rem;
+      margin-top: 1.5rem;
+    }
+    .how-to h3 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.6rem; font-weight: 700;
+      letter-spacing: 0.2em; color: var(--cyan);
+      margin-bottom: 0.8rem;
+    }
+    .how-to ul {
+      list-style: none; font-size: 0.88rem;
+      font-weight: 300; color: var(--dim);
+      line-height: 1.9;
+    }
+    .how-to ul li::before { content: '▸ '; color: var(--cyan); }
+
+    /* ── RESPONSIVE ───────────────────────── */
+    @media (max-width: 480px) {
+      .score-val { font-size: 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="top-nav">
+  <a href="../index.html" class="back">← Hub</a>
+  <span class="game-title">Tic Tac Toe</span>
+  <span style="width:80px"></span>
+</nav>
+
+<!-- MODE SELECTOR -->
+<div class="mode-row">
+  <button class="mode-btn active" id="btn2p" onclick="setMode('2p')">👥 2 Player</button>
+  <button class="mode-btn" id="btnAI" onclick="setMode('ai')">🤖 vs AI</button>
+</div>
+
+<!-- DIFFICULTY (AI only) -->
+<div class="diff-row hidden" id="diffRow">
+  <button class="diff-btn diff-easy active" onclick="setDiff('easy')">Easy</button>
+  <button class="diff-btn diff-medium" onclick="setDiff('medium')">Medium</button>
+  <button class="diff-btn diff-hard" onclick="setDiff('hard')">Hard</button>
+</div>
+
+<!-- STATUS BAR -->
+<div class="status-bar">
+  <div class="player-chip active" id="chipX">
+    <span class="player-sym x-sym">X</span>
+    <span class="player-name" id="nameX">Player 1</span>
+  </div>
+  <span class="turn-label" id="turnLabel">YOUR TURN</span>
+  <div class="player-chip" id="chipO">
+    <span class="player-sym o-sym">O</span>
+    <span class="player-name" id="nameO">Player 2</span>
+  </div>
+</div>
+
+<!-- SCOREBOARD -->
+<div class="score-strip">
+  <div class="score-box">
+    <div class="score-val x" id="scoreX">0</div>
+    <div class="score-lbl">X Wins</div>
+  </div>
+  <div class="score-box">
+    <div class="score-val d" id="scoreD">0</div>
+    <div class="score-lbl">Draws</div>
+  </div>
+  <div class="score-box">
+    <div class="score-val o" id="scoreO">0</div>
+    <div class="score-lbl">O Wins</div>
+  </div>
+</div>
+
+<!-- AI THINKING -->
+<div class="thinking" id="thinking">⟳ AI is thinking...</div>
+
+<!-- BOARD -->
+<div class="board-wrap">
+  <div class="board" id="board">
+    <!-- 9 cells rendered by JS -->
+  </div>
+  <svg class="win-line" id="winLine" viewBox="0 0 100 100" preserveAspectRatio="none">
+    <line id="winLineEl" x1="0" y1="0" x2="0" y2="0" />
+  </svg>
+  <div class="result-overlay" id="resultOverlay">
+    <div class="result-title" id="resultTitle">X WINS!</div>
+    <div class="result-sub" id="resultSub">Congratulations</div>
+    <button class="btn-rematch" onclick="resetGame()">⟳ Rematch</button>
+  </div>
+</div>
+
+<!-- ACTIONS -->
+<div class="actions">
+  <button class="action-btn" onclick="resetGame()">Reset Round</button>
+  <button class="action-btn" onclick="resetAll()">Reset All</button>
+</div>
+
+<!-- HOW TO PLAY -->
+<div class="how-to">
+  <h3>// Controls</h3>
+  <ul>
+    <li>Click any empty cell to place your mark</li>
+    <li>Get 3 in a row — horizontal, vertical, or diagonal — to win</li>
+    <li>2 Player: X goes first, then O alternates</li>
+    <li>AI Mode: You play X, AI plays O</li>
+    <li>Hard AI uses Minimax — it never loses</li>
+  </ul>
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   TIC TAC TOE — Full Game Logic
+   ══════════════════════════════════════════ */
+
+// ── STATE ──────────────────────────────────
+let board      = Array(9).fill(null);  // null | 'X' | 'O'
+let current    = 'X';                  // whose turn
+let gameOver   = false;
+let mode       = '2p';                 // '2p' | 'ai'
+let difficulty = 'hard';               // 'easy' | 'medium' | 'hard'
+let scores     = { X: 0, O: 0, D: 0 };
+
+// Win combinations: indices of winning lines
+const WIN_LINES = [
+  [0,1,2],[3,4,5],[6,7,8],   // rows
+  [0,3,6],[1,4,7],[2,5,8],   // cols
+  [0,4,8],[2,4,6]            // diagonals
+];
+
+// SVG win-line coordinates (percent) for each WIN_LINE
+const LINE_COORDS = [
+  [16,16,84,16],[16,50,84,50],[16,84,84,84],
+  [16,16,16,84],[50,16,50,84],[84,16,84,84],
+  [16,16,84,84],[84,16,16,84]
+];
+
+// ── BUILD BOARD DOM ─────────────────────────
+function buildBoard() {
+  const el = document.getElementById('board');
+  el.innerHTML = '';
+  for (let i = 0; i < 9; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.dataset.i = i;
+    cell.addEventListener('click', onCellClick);
+
+    // ghost hover
+    cell.addEventListener('mouseenter', () => {
+      if (!board[i] && !gameOver) cell.dataset.ghost = current;
+    });
+    cell.addEventListener('mouseleave', () => { cell.dataset.ghost = ''; });
+
+    const inner = document.createElement('span');
+    inner.className = 'cell-inner';
+    cell.appendChild(inner);
+    el.appendChild(cell);
+  }
+}
+
+// ── RENDER STATE TO DOM ─────────────────────
+function render() {
+  document.querySelectorAll('.cell').forEach((cell, i) => {
+    const inner = cell.querySelector('.cell-inner');
+    const val   = board[i];
+    if (val) {
+      inner.textContent = val;
+      inner.className   = `cell-inner show ${val.toLowerCase()}-sym`;
+      cell.classList.add('taken');
+    } else {
+      inner.textContent = '';
+      inner.className   = 'cell-inner';
+      cell.classList.remove('taken', 'win-cell');
+    }
+  });
+
+  // chip highlight
+  ['X','O'].forEach(p => {
+    const chip = document.getElementById(`chip${p}`);
+    chip.classList.toggle('active', current === p && !gameOver);
+  });
+
+  document.getElementById('scoreX').textContent = scores.X;
+  document.getElementById('scoreO').textContent = scores.O;
+  document.getElementById('scoreD').textContent = scores.D;
+}
+
+// ── CELL CLICK ──────────────────────────────
+function onCellClick(e) {
+  const i = parseInt(e.currentTarget.dataset.i);
+  if (board[i] || gameOver) return;
+  if (mode === 'ai' && current === 'O') return;  // not your turn
+
+  playMove(i);
+}
+
+// ── PLAY MOVE ───────────────────────────────
+function playMove(i) {
+  board[i] = current;
+  render();
+
+  const result = checkResult();
+  if (result) { endGame(result); return; }
+
+  current = current === 'X' ? 'O' : 'X';
+  render();
+
+  if (mode === 'ai' && current === 'O' && !gameOver) {
+    aiTurn();
+  }
+}
+
+// ── AI TURN ─────────────────────────────────
+function aiTurn() {
+  document.getElementById('thinking').classList.add('show');
+  // small delay so UI updates before heavy minimax
+  setTimeout(() => {
+    const move = getAIMove();
+    document.getElementById('thinking').classList.remove('show');
+    if (move !== -1) playMove(move);
+  }, difficulty === 'hard' ? 350 : 200);
+}
+
+// ── GET AI MOVE ──────────────────────────────
+/*
+  AI DECISION LOGIC (layered by difficulty):
+
+  EASY:   70% random empty cell, 30% smart
+  MEDIUM: block immediate wins, else random
+  HARD:   minimax — theoretically perfect play, never loses
+*/
+function getAIMove() {
+  const empty = board.map((v,i) => v === null ? i : -1).filter(i => i !== -1);
+  if (!empty.length) return -1;
+
+  if (difficulty === 'easy') {
+    // Mostly random with occasional smart play
+    if (Math.random() > 0.3) return empty[Math.floor(Math.random() * empty.length)];
+    return minimax(board, 'O', 0, -Infinity, Infinity).index;
+  }
+
+  if (difficulty === 'medium') {
+    // Block obvious wins; otherwise random
+    const block = findWinningMove('X');
+    if (block !== -1) return block;
+    const win   = findWinningMove('O');
+    if (win !== -1) return win;
+    return empty[Math.floor(Math.random() * empty.length)];
+  }
+
+  // HARD: full minimax with alpha-beta pruning
+  return minimax(board, 'O', 0, -Infinity, Infinity).index;
+}
+
+// Find a move that wins/blocks for given player
+function findWinningMove(player) {
+  for (let i = 0; i < 9; i++) {
+    if (board[i]) continue;
+    board[i] = player;
+    if (checkWinner(board)) { board[i] = null; return i; }
+    board[i] = null;
+  }
+  return -1;
+}
+
+/*
+  MINIMAX WITH ALPHA-BETA PRUNING
+  ─────────────────────────────────
+  This is the algorithm that guarantees perfect play.
+
+  How it works:
+  • Recursively explores every possible game state
+  • 'O' (AI) tries to MAXIMISE the score
+  • 'X' (human) tries to MINIMISE the score
+  • Scores: O wins = +10-depth (prefers faster wins)
+            X wins = -10+depth (prefers slower losses)
+            Draw  = 0
+
+  Alpha-beta pruning skips branches that can't affect
+  the final decision, making it faster.
+*/
+function minimax(b, player, depth, alpha, beta) {
+  const winner = checkWinner(b);
+  if (winner === 'O') return { score:  10 - depth };
+  if (winner === 'X') return { score: -10 + depth };
+  const empty = b.map((v,i) => v === null ? i : -1).filter(i => i !== -1);
+  if (!empty.length)  return { score: 0 };
+
+  let best = player === 'O'
+    ? { score: -Infinity, index: -1 }
+    : { score:  Infinity, index: -1 };
+
+  for (const i of empty) {
+    b[i] = player;
+    const result = minimax(b, player === 'O' ? 'X' : 'O', depth + 1, alpha, beta);
+    b[i] = null;
+    result.index = i;
+
+    if (player === 'O') {
+      if (result.score > best.score) best = result;
+      alpha = Math.max(alpha, best.score);
+    } else {
+      if (result.score < best.score) best = result;
+      beta = Math.min(beta, best.score);
+    }
+    if (beta <= alpha) break; // prune!
+  }
+  return best;
+}
+
+// ── CHECK RESULT ─────────────────────────────
+function checkResult() {
+  const winner = checkWinner(board);
+  if (winner) return { type: 'win', player: winner };
+  if (board.every(v => v !== null)) return { type: 'draw' };
+  return null;
+}
+
+function checkWinner(b) {
+  for (const [a, c, e] of WIN_LINES) {
+    if (b[a] && b[a] === b[c] && b[a] === b[e]) return b[a];
+  }
+  return null;
+}
+
+function getWinLineIndex(b) {
+  for (let i = 0; i < WIN_LINES.length; i++) {
+    const [a,c,e] = WIN_LINES[i];
+    if (b[a] && b[a] === b[c] && b[a] === b[e]) return i;
+  }
+  return -1;
+}
+
+// ── END GAME ─────────────────────────────────
+function endGame(result) {
+  gameOver = true;
+  const overlay = document.getElementById('resultOverlay');
+  const title   = document.getElementById('resultTitle');
+  const sub     = document.getElementById('resultSub');
+
+  if (result.type === 'draw') {
+    title.textContent = "DRAW!";
+    title.className   = 'result-title draw';
+    sub.textContent   = 'Great game — try again';
+    scores.D++;
+  } else {
+    const p = result.player;
+    const label = mode === 'ai' && p === 'O' ? 'AI' :
+                  mode === 'ai' && p === 'X' ? 'You' : `Player ${p === 'X' ? '1' : '2'}`;
+    title.textContent = `${label === 'AI' ? '🤖' : '🏆'} ${label} Wins!`;
+    title.className   = 'result-title win';
+    sub.textContent   = `${p === 'X' ? 'X' : 'O'} dominates this round`;
+    scores[p]++;
+
+    // highlight winning cells and draw line
+    const winIdx = getWinLineIndex(board);
+    if (winIdx !== -1) {
+      WIN_LINES[winIdx].forEach(ci => {
+        document.querySelectorAll('.cell')[ci].classList.add('win-cell');
+      });
+      const [x1,y1,x2,y2] = LINE_COORDS[winIdx];
+      const line = document.getElementById('winLineEl');
+      line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+      line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    }
+  }
+
+  render();
+  // slight delay before showing overlay
+  setTimeout(() => overlay.classList.add('show'), 400);
+
+  // persist score to localStorage
+  localStorage.setItem('djhub_totalplays',
+    (parseInt(localStorage.getItem('djhub_totalplays') || '0') + 1).toString()
+  );
+}
+
+// ── RESET ────────────────────────────────────
+function resetGame() {
+  board    = Array(9).fill(null);
+  current  = 'X';
+  gameOver = false;
+  document.getElementById('resultOverlay').classList.remove('show');
+  document.getElementById('winLineEl').setAttribute('x1','0');
+  document.getElementById('winLineEl').setAttribute('y1','0');
+  document.getElementById('winLineEl').setAttribute('x2','0');
+  document.getElementById('winLineEl').setAttribute('y2','0');
+  buildBoard();
+  render();
+}
+function resetAll() {
+  scores = { X:0, O:0, D:0 };
+  resetGame();
+}
+
+// ── MODE SWITCHING ───────────────────────────
+function setMode(m) {
+  mode = m;
+  document.getElementById('btn2p').classList.toggle('active', m === '2p');
+  document.getElementById('btnAI').classList.toggle('active', m === 'ai');
+  document.getElementById('diffRow').classList.toggle('hidden', m === '2p');
+  document.getElementById('nameO').textContent = m === 'ai' ? 'AI' : 'Player 2';
+  document.getElementById('nameX').textContent = m === 'ai' ? 'You' : 'Player 1';
+  document.getElementById('turnLabel').textContent = m === 'ai' ? 'YOUR TURN' : 'P1 TURN';
+  resetAll();
+}
+
+function setDiff(d) {
+  difficulty = d;
+  document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.diff-${d}`).classList.add('active');
+  resetGame();
+}
+
+// ── INIT ─────────────────────────────────────
+buildBoard();
+render();
+</script>
+</body>
+</html>

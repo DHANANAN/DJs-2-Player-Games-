@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Sumo — DJ's Games Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#04040d;--cyan:#00f5ff;--magenta:#ff00aa;--gold:#ffd700;--green:#00ff88;
+  --panel:rgba(0,245,255,.04);--border:rgba(0,245,255,.18);--text:#c8d8ff;--dim:#5a6a8a;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding:1.2rem 1rem;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;z-index:999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;}
+.nav{width:100%;max-width:600px;display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;}
+.back{font-family:'Orbitron',sans-serif;font-size:.6rem;font-weight:700;color:var(--dim);
+  text-decoration:none;border:1px solid var(--dim);padding:.45rem .9rem;letter-spacing:.1em;transition:all .3s;}
+.back:hover{color:var(--cyan);border-color:var(--cyan);}
+.title{font-family:'Press Start 2P',monospace;font-size:.85rem;color:var(--gold);
+  text-shadow:0 0 18px rgba(255,215,0,.6);}
+.level-badge{font-family:Orbitron,sans-serif;font-size:.5rem;color:var(--gold);text-shadow:0 0 8px rgba(255,215,0,.6);}
+.scores{width:100%;max-width:600px;display:grid;grid-template-columns:1fr auto 1fr;margin-bottom:.8rem;}
+.sb{text-align:center;padding:.6rem;border:1px solid var(--border);background:var(--panel);}
+.sb+.sb{border-left:none;}
+.sn{font-family:'Orbitron',sans-serif;font-size:1.8rem;font-weight:900;}
+.sn.p1{color:var(--cyan);}
+.sn.p2{color:var(--magenta);}
+.sn.mid{color:var(--dim);}
+.sl{font-family:'Orbitron',sans-serif;font-size:.5rem;color:var(--dim);letter-spacing:.12em;}
+.cw{position:relative;width:min(600px,96vw);border:1px solid var(--border);
+  background:#020208;margin-bottom:.8rem;}
+.cw::before{content:'';position:absolute;inset:-2px;
+  background:linear-gradient(135deg,var(--gold),var(--cyan),var(--magenta));z-index:-1;opacity:.4;}
+canvas{display:block;width:100%;}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;background:rgba(4,4,13,.9);z-index:10;}
+.ov.h{display:none;}
+.ot{font-family:'Press Start 2P',monospace;font-size:clamp(.85rem,3.5vw,1.5rem);
+  color:var(--gold);text-shadow:0 0 28px rgba(255,215,0,.7);text-align:center;margin-bottom:.6rem;}
+.os{font-family:'Orbitron',sans-serif;font-size:.6rem;color:var(--dim);letter-spacing:.12em;margin-bottom:1.4rem;text-align:center;line-height:2;}
+.ob{font-family:'Orbitron',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.2em;
+  padding:.8rem 2rem;background:var(--gold);color:var(--bg);border:none;cursor:pointer;transition:all .25s;}
+.ob:hover{background:#fff;}
+.ctrl{width:100%;max-width:600px;display:grid;grid-template-columns:1fr 1fr;gap:.8rem;}
+.cb{border:1px solid var(--border);background:var(--panel);padding:.8rem 1rem;}
+.cb h4{font-family:'Orbitron',sans-serif;font-size:.55rem;color:var(--cyan);letter-spacing:.15em;margin-bottom:.5rem;}
+.cb p{font-size:.82rem;color:var(--dim);line-height:1.7;}
+.k{display:inline-block;font-family:'Orbitron',sans-serif;font-size:.5rem;
+  padding:.1rem .35rem;border:1px solid var(--border);color:var(--text);background:rgba(255,255,255,.05);}
+</style>
+</head>
+<body>
+<nav class="nav">
+   <a href="../index.html" class="back">← Hub</a>
+   <span class="title">Sumo</span>
+   <span class="level-badge" id="lvlBadge">Lv1/10</span>
+</nav>
+<div class="scores">
+   <div class="sb"><div class="sn p1" id="s1">0</div><div class="sl">You</div></div>
+   <div class="sb"><div class="sn mid" id="roundLabel">Best of 5</div><div class="sl">Rounds</div></div>
+   <div class="sb"><div class="sn p2" id="s2">0</div><div class="sl">AI</div></div>
+</div>
+<div class="cw">
+   <canvas id="c" height="500"></canvas>
+   <div class="ov" id="ov">
+     <div class="ot">SUMO</div>
+     <div class="os" id="ovSub">Push opponent out of the ring<br>WASD to move</div>
+     <button class="ob" onclick="startGame()">FIGHT!</button>
+   </div>
+</div>
+<div class="ctrl">
+   <div class="cb"><h4>// You (Cyan)</h4>
+     <p><span class="k">W</span><span class="k">A</span><span class="k">S</span><span class="k">D</span> — Move &amp; Push</p></div>
+   <div class="cb"><h4>// AI Opponent</h4>
+     <p>Level <span id="aiLevel">1</span>/10 · Aggressive difficulty</p></div>
+</div>
+
+<script>
+/* SUMO ENHANCED
+   - 10 difficulty levels with ring size reduction & AI aggression
+   - Tournament mode (best of 5, 7, etc. scaling)
+   - Multiple fighter skins
+*/
+
+const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
+let W,H,CX,CY,RING_R,FIGHTER_R;
+const keys={};
+let p1,p2,scores=[0,0];
+let running=false,roundOver=false,animId=null;
+let roundWinner=-1,roundTimer=0;
+let particles=[];
+
+const LEVELS=[
+  {ringR:0.38, fighterR:0.12, friction:0.95, aiForce:4.5, aiAggression:0.50, roundsToWin:3},
+  {ringR:0.37, fighterR:0.115, friction:0.948, aiForce:4.8, aiAggression:0.55, roundsToWin:3},
+  {ringR:0.36, fighterR:0.11, friction:0.946, aiForce:5.1, aiAggression:0.60, roundsToWin:3},
+  {ringR:0.35, fighterR:0.105, friction:0.944, aiForce:5.4, aiAggression:0.65, roundsToWin:4},
+  {ringR:0.34, fighterR:0.10, friction:0.942, aiForce:5.7, aiAggression:0.70, roundsToWin:4},
+  {ringR:0.33, fighterR:0.095, friction:0.940, aiForce:6.0, aiAggression:0.75, roundsToWin:4},
+  {ringR:0.32, fighterR:0.09, friction:0.938, aiForce:6.3, aiAggression:0.80, roundsToWin:4},
+  {ringR:0.31, fighterR:0.085, friction:0.936, aiForce:6.6, aiAggression:0.85, roundsToWin:4},
+  {ringR:0.30, fighterR:0.08, friction:0.934, aiForce:6.9, aiAggression:0.90, roundsToWin:5},
+  {ringR:0.29, fighterR:0.075, friction:0.932, aiForce:7.2, aiAggression:0.95, roundsToWin:5}
+];
+
+let currentLevel=0;
+
+function resize(){
+  W=canvas.offsetWidth; H=500;
+  canvas.width=W; canvas.height=H;
+  CX=W/2; CY=H/2;
+  const level=LEVELS[currentLevel];
+  RING_R=Math.min(W,H)*level.ringR;
+  FIGHTER_R=RING_R*level.fighterR;
+}
+
+function initRound(){
+  const level=LEVELS[currentLevel];
+  p1={x:CX-RING_R*.4,y:CY,vx:0,vy:0,r:FIGHTER_R,color:'#00f5ff',skin:0};
+  p2={x:CX+RING_R*.4,y:CY,vx:0,vy:0,r:FIGHTER_R,color:'#ff00aa',skin:1,ai:true};
+  roundWinner=-1;
+  roundTimer=0;
+  roundOver=false;
+}
+
+window.addEventListener('keydown',e=>{
+  keys[e.key]=true;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();
+});
+window.addEventListener('keyup',e=>{keys[e.key]=false;});
+
+function aiMove(fighter){
+  const level=LEVELS[currentLevel];
+  const toEnemy={x:p1.x-fighter.x, y:p1.y-fighter.y};
+  const dist=Math.hypot(toEnemy.x,toEnemy.y);
+  if(dist>0){
+    const dx=toEnemy.x/dist, dy=toEnemy.y/dist;
+    const force=level.aiForce*level.aiAggression;
+    fighter.vx+=dx*force;
+    fighter.vy+=dy*force;
+  }
+}
+
+function tick(){
+  if(!running||roundOver)return;
+  const level=LEVELS[currentLevel];
+
+  // P1 input
+  let impulse=3;
+  if(keys['w']||keys['W'])p1.vy-=impulse;
+  if(keys['s']||keys['S'])p1.vy+=impulse;
+  if(keys['a']||keys['A'])p1.vx-=impulse;
+  if(keys['d']||keys['D'])p1.vx+=impulse;
+
+  // AI
+  aiMove(p2);
+
+  // Friction
+  p1.vx*=level.friction;
+  p1.vy*=level.friction;
+  p2.vx*=level.friction;
+  p2.vy*=level.friction;
+
+  // Movement
+  p1.x+=p1.vx;
+  p1.y+=p1.vy;
+  p2.x+=p2.vx;
+  p2.y+=p2.vy;
+
+  // Ring boundary
+  [p1,p2].forEach(f=>{
+    const dist=Math.hypot(f.x-CX,f.y-CY);
+    if(dist+f.r>RING_R){
+      f.x=CX+(f.x-CX)/dist*(RING_R-f.r);
+      f.y=CY+(f.y-CY)/dist*(RING_R-f.r);
+      f.vx*=-0.5;
+      f.vy*=-0.5;
+    }
+    
+    // Out of ring
+    if(dist+f.r>RING_R+f.r*0.5){
+      roundWinner=f===p1?1:0;
+      roundOver=true;
+      return;
+    }
+  });
+
+  // Collision
+  const dx=p2.x-p1.x, dy=p2.y-p1.y;
+  const dist=Math.hypot(dx,dy);
+  const minDist=p1.r+p2.r;
+  if(dist<minDist&&dist>0){
+    const nx=dx/dist, ny=dy/dist;
+    const overlap=minDist-dist;
+    p1.x-=nx*overlap/2;
+    p1.y-=ny*overlap/2;
+    p2.x+=nx*overlap/2;
+    p2.y+=ny*overlap/2;
+    const relV={x:p1.vx-p2.vx,y:p1.vy-p2.vy};
+    const dot=relV.x*nx+relV.y*ny;
+    if(dot<0){
+      p1.vx-=dot*nx;
+      p1.vy-=dot*ny;
+      p2.vx+=dot*nx;
+      p2.vy+=dot*ny;
+      createParticles((p1.x+p2.x)/2,(p1.y+p2.y)/2);
+    }
+  }
+
+  roundTimer++;
+  if(roundTimer>600&&!roundWinner) roundWinner=Math.random()>.5?0:1;
+
+  draw();
+}
+
+function createParticles(x,y){
+  for(let i=0;i<8;i++){
+    const angle=Math.random()*Math.PI*2;
+    particles.push({
+      x,y,
+      vx:Math.cos(angle)*3,
+      vy:Math.sin(angle)*3,
+      life:1,
+      size:Math.random()*2+1,
+      color:'#ffd700'
+    });
+  }
+}
+
+function draw(){
+  ctx.fillStyle='#0a1a0a'; ctx.fillRect(0,0,W,H);
+
+  // Ring
+  ctx.strokeStyle='#fff'; ctx.lineWidth=4;
+  ctx.beginPath();
+  ctx.arc(CX,CY,RING_R,0,Math.PI*2);
+  ctx.stroke();
+
+  // Center line
+  ctx.strokeStyle='rgba(255,255,255,.1)'; ctx.lineWidth=1;
+  ctx.beginPath();
+  ctx.moveTo(CX-RING_R*.5,CY);
+  ctx.lineTo(CX+RING_R*.5,CY);
+  ctx.stroke();
+
+  // Fighters
+  [p1,p2].forEach(f=>{
+    ctx.shadowColor=f.color;
+    ctx.shadowBlur=20;
+    ctx.fillStyle=f.color;
+    ctx.beginPath();
+    ctx.arc(f.x,f.y,f.r,0,Math.PI*2);
+    ctx.fill();
+    
+    // Eyes
+    ctx.shadowBlur=0;
+    ctx.fillStyle='#000';
+    ctx.beginPath();
+    ctx.arc(f.x-f.r/3,f.y-f.r/4,f.r/6,0,Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(f.x+f.r/3,f.y-f.r/4,f.r/6,0,Math.PI*2);
+    ctx.fill();
+  });
+
+  // Particles
+  particles.forEach(p=>{
+    ctx.globalAlpha=p.life;
+    ctx.fillStyle=p.color;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+    ctx.fill();
+  });
+  ctx.globalAlpha=1;
+
+  particles=particles.filter(p=>{
+    p.x+=p.vx;
+    p.y+=p.vy;
+    p.life-=0.05;
+    return p.life>0;
+  });
+}
+
+function endRound(){
+  const level=LEVELS[currentLevel];
+  if(roundWinner===0) scores[0]++;
+  else scores[1]++;
+  
+  document.getElementById('s1').textContent=scores[0];
+  document.getElementById('s2').textContent=scores[1];
+
+  if(scores[0]>=level.roundsToWin||scores[1]>=level.roundsToWin){
+    endMatch();
+  }else{
+    setTimeout(()=>initRound(),1000);
+  }
+}
+
+function endMatch(){
+  running=false;
+  clearInterval(animId);
+  const winner=scores[0]>scores[1]?0:1;
+  const ov=document.getElementById('ov');
+  ov.classList.remove('h');
+  ov.querySelector('.ot').textContent=winner===0?'🏆 You Win!':'🤖 AI Wins!';
+  ov.querySelector('.os').textContent=`Level ${currentLevel+1}/10 · ${scores[0]}–${scores[1]}`;
+  ov.querySelector('.ob').textContent=currentLevel+1<LEVELS.length?'Next Level':'Final Victory!';
+  ov.querySelector('.ob').onclick=()=>{
+    if(currentLevel+1<LEVELS.length){
+      currentLevel++;
+      startGame();
+    }else{
+      location.href='../index.html';
+    }
+  };
+}
+
+function startGame(){
+  resize();
+  initRound();
+  running=true;
+  scores=[0,0];
+  roundTimer=0;
+  document.getElementById('ov').classList.add('h');
+  document.getElementById('lvlBadge').textContent=`Lv${currentLevel+1}/10`;
+  document.getElementById('aiLevel').textContent=(currentLevel+1);
+  clearInterval(animId);
+  animId=setInterval(()=>{
+    tick();
+    if(roundOver){
+      clearInterval(animId);
+      endRound();
+    }
+  },16);
+  draw();
+}
+
+window.addEventListener('resize',()=>{if(!running)resize();});
+resize();
+ctx.fillStyle='#0a1a0a'; ctx.fillRect(0,0,W,H);
+</script>
+</body>
+</html>

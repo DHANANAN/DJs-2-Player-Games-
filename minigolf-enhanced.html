@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Minigolf — DJ's Games Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#04040d;--cyan:#00f5ff;--magenta:#ff00aa;--gold:#ffd700;--green:#00ff88;
+  --panel:rgba(0,245,255,.04);--border:rgba(0,245,255,.18);--text:#c8d8ff;--dim:#5a6a8a;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding:1.2rem 1rem;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;z-index:999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;}
+.nav{width:100%;max-width:700px;display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;}
+.back{font-family:'Orbitron',sans-serif;font-size:.6rem;font-weight:700;color:var(--dim);
+  text-decoration:none;border:1px solid var(--dim);padding:.45rem .9rem;letter-spacing:.1em;transition:all .3s;}
+.back:hover{color:var(--cyan);border-color:var(--cyan);}
+.title{font-family:'Press Start 2P',monospace;font-size:.85rem;color:var(--green);
+  text-shadow:0 0 18px rgba(0,255,136,.6);}
+.level-badge{font-family:Orbitron,sans-serif;font-size:.5rem;color:var(--gold);text-shadow:0 0 8px rgba(255,215,0,.6);}
+.scores{width:100%;max-width:700px;display:grid;grid-template-columns:1fr auto;margin-bottom:.8rem;gap:.5rem;}
+.sb{text-align:center;padding:.6rem;border:1px solid var(--border);background:var(--panel);}
+.sn{font-family:'Orbitron',sans-serif;font-size:1.6rem;font-weight:900;color:var(--gold);}
+.sl{font-family:'Orbitron',sans-serif;font-size:.5rem;color:var(--dim);letter-spacing:.12em;}
+.cw{position:relative;width:min(700px,96vw);border:1px solid var(--border);background:#020208;margin-bottom:.8rem;}
+.cw::before{content:'';position:absolute;inset:-2px;background:linear-gradient(135deg,var(--green),var(--cyan));z-index:-1;opacity:.4;}
+canvas{display:block;width:100%;}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,4,13,.9);z-index:10;}
+.ov.h{display:none;}
+.ot{font-family:'Press Start 2P',monospace;font-size:clamp(.85rem,3.5vw,1.5rem);color:var(--gold);text-shadow:0 0 28px rgba(255,215,0,.7);text-align:center;margin-bottom:.6rem;}
+.os{font-family:'Orbitron',sans-serif;font-size:.6rem;color:var(--dim);letter-spacing:.12em;margin-bottom:1.4rem;text-align:center;line-height:2;}
+.ob{font-family:'Orbitron',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.2em;padding:.8rem 2rem;background:var(--green);color:var(--bg);border:none;cursor:pointer;transition:all .25s;}
+.ob:hover{background:#fff;}
+.ctrl{width:100%;max-width:700px;border:1px solid var(--border);background:var(--panel);padding:.8rem 1.2rem;font-size:.85rem;color:var(--dim);}
+</style>
+</head>
+<body>
+<nav class="nav">
+   <a href="../index.html" class="back">← Hub</a>
+   <span class="title">Minigolf</span>
+   <span class="level-badge" id="lvlBadge">Lv1/10</span>
+</nav>
+<div class="scores">
+   <div class="sb"><div class="sn" id="strokes">Strokes: 0</div><div class="sl">Hole 1/9</div></div>
+   <div class="sb"><div class="sn" id="score">Score: 0</div><div class="sl">Total</div></div>
+</div>
+<div class="cw">
+   <canvas id="c" height="450"></canvas>
+   <div class="ov" id="ov">
+     <div class="ot">MINIGOLF</div>
+     <div class="os">9 Holes · Lowest score wins<br>Drag to aim & power</div>
+     <button class="ob" onclick="startGame()">TEE OFF</button>
+   </div>
+</div>
+<div class="ctrl">
+Drag from ball to aim. Longer drag = more power. Sink each hole in fewest strokes. Progressive difficulty with 10 levels!
+</div>
+
+<script>
+const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
+let W,H;
+
+const LEVELS=[
+  {friction:0.98, ballR:6, holeR:14},
+  {friction:0.979, ballR:5.8, holeR:13},
+  {friction:0.978, ballR:5.6, holeR:12.5},
+  {friction:0.977, ballR:5.4, holeR:12},
+  {friction:0.976, ballR:5.2, holeR:11.5},
+  {friction:0.975, ballR:5, holeR:11},
+  {friction:0.974, ballR:4.8, holeR:10.5},
+  {friction:0.973, ballR:4.6, holeR:10},
+  {friction:0.972, ballR:4.4, holeR:9.5},
+  {friction:0.971, ballR:4.2, holeR:9}
+];
+
+let currentLevel=0;
+let ball,hole,obstacles=[],dragging=false,dragStart={x:0,y:0},mousePos={x:0,y:0};
+let currentHole=1,totalStrokes=0,holesCompleted=0;
+let animId=null,running=false;
+
+function resize(){
+  W=canvas.offsetWidth;
+  H=450;
+  canvas.width=W;
+  canvas.height=H;
+}
+
+function initHole(){
+  const level=LEVELS[currentLevel];
+  ball={x:80,y:H/2,vx:0,vy:0,r:level.ballR};
+  hole={x:W-80,y:H/2,r:level.holeR};
+  obstacles=[];
+  
+  if(currentHole>1){
+    for(let i=0;i<currentHole-1;i++){
+      obstacles.push({x:200+Math.random()*200,y:50+Math.random()*350,w:40,h:40});
+    }
+  }
+}
+
+canvas.addEventListener('mousedown',e=>{
+  const r=canvas.getBoundingClientRect();
+  mousePos.x=(e.clientX-r.left)*(W/r.width);
+  mousePos.y=(e.clientY-r.top)*(H/r.height);
+  const dx=mousePos.x-ball.x,dy=mousePos.y-ball.y;
+  if(Math.hypot(dx,dy)<20){dragging=true;dragStart={x:mousePos.x,y:mousePos.y};}
+});
+canvas.addEventListener('mousemove',e=>{
+  const r=canvas.getBoundingClientRect();
+  mousePos.x=(e.clientX-r.left)*(W/r.width);
+  mousePos.y=(e.clientY-r.top)*(H/r.height);
+});
+canvas.addEventListener('mouseup',e=>{
+  if(!dragging)return;
+  dragging=false;
+  const dx=dragStart.x-mousePos.x,dy=dragStart.y-mousePos.y;
+  ball.vx=dx*0.15;
+  ball.vy=dy*0.15;
+  totalStrokes++;
+  document.getElementById('strokes').textContent='Strokes: '+totalStrokes;
+});
+
+function tick(){
+  if(!running)return;
+  const level=LEVELS[currentLevel];
+  
+  ball.vx*=level.friction;
+  ball.vy*=level.friction;
+  ball.x+=ball.vx;
+  ball.y+=ball.vy;
+  
+  if(ball.x-ball.r<0){ball.x=ball.r;ball.vx*=-0.8;}
+  if(ball.x+ball.r>W){ball.x=W-ball.r;ball.vx*=-0.8;}
+  if(ball.y-ball.r<0){ball.y=ball.r;ball.vy*=-0.8;}
+  if(ball.y+ball.r>H){ball.y=H-ball.r;ball.vy*=-0.8;}
+  
+  obstacles.forEach(obs=>{
+    if(ball.x+ball.r>obs.x&&ball.x-ball.r<obs.x+obs.w&&
+       ball.y+ball.r>obs.y&&ball.y-ball.r<obs.y+obs.h){
+      ball.vx*=-0.7;
+      ball.vy*=-0.7;
+    }
+  });
+  
+  const dist=Math.hypot(ball.x-hole.x,ball.y-hole.y);
+  if(dist<hole.r){
+    running=false;
+    holesCompleted++;
+    document.getElementById('score').textContent='Score: '+totalStrokes;
+    if(currentHole<9){
+      currentHole++;
+      setTimeout(()=>{initHole();tick();},800);
+    }else{
+      endGame();
+    }
+    return;
+  }
+  
+  if(Math.hypot(ball.vx,ball.vy)<0.1&&!dragging) running=true;
+  
+  draw();
+}
+
+function draw(){
+  ctx.fillStyle='#0a4a0a';
+  ctx.fillRect(0,0,W,H);
+  
+  obstacles.forEach(obs=>{
+    ctx.fillStyle='#ff6600';
+    ctx.fillRect(obs.x,obs.y,obs.w,obs.h);
+  });
+  
+  ctx.fillStyle='#fff';
+  ctx.beginPath();
+  ctx.arc(hole.x,hole.y,hole.r,0,Math.PI*2);
+  ctx.fill();
+  
+  ctx.fillStyle='#ffd700';
+  ctx.shadowColor='#ffd700';
+  ctx.shadowBlur=10;
+  ctx.beginPath();
+  ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);
+  ctx.fill();
+  ctx.shadowBlur=0;
+  
+  if(dragging){
+    ctx.strokeStyle='rgba(0,255,136,.4)';
+    ctx.lineWidth=1;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath();
+    ctx.moveTo(ball.x,ball.y);
+    ctx.lineTo(mousePos.x,mousePos.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+function startGame(){
+  resize();
+  currentHole=1;
+  totalStrokes=0;
+  holesCompleted=0;
+  initHole();
+  running=true;
+  document.getElementById('ov').classList.add('h');
+  document.getElementById('lvlBadge').textContent=`Lv${currentLevel+1}/10`;
+  clearInterval(animId);
+  animId=setInterval(tick,16);
+  draw();
+}
+
+function endGame(){
+  const ov=document.getElementById('ov');
+  ov.classList.remove('h');
+  ov.querySelector('.ot').textContent='🏌️ Course Complete!';
+  ov.querySelector('.os').textContent=`Total Score: ${totalStrokes} strokes · Level ${currentLevel+1}/10`;
+  ov.querySelector('.ob').textContent=currentLevel+1<LEVELS.length?'Next Level':'Final Victory!';
+  ov.querySelector('.ob').onclick=()=>{
+    if(currentLevel+1<LEVELS.length){
+      currentLevel++;
+      startGame();
+    }else{
+      location.href='../index.html';
+    }
+  };
+}
+
+window.addEventListener('resize',()=>{if(!running)resize();});
+resize();
+ctx.fillStyle='#0a4a0a';
+ctx.fillRect(0,0,W,H);
+</script>
+</body>
+</html>

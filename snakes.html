@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Snakes — DJ's Games Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#04040d;--cyan:#00f5ff;--magenta:#ff00aa;--gold:#ffd700;
+  --panel:rgba(0,245,255,.04);--border:rgba(0,245,255,.18);--text:#c8d8ff;--dim:#5a6a8a;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding:1.2rem 1rem;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;z-index:999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;}
+.nav{width:100%;max-width:640px;display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}
+.back{font-family:'Orbitron',sans-serif;font-size:.6rem;font-weight:700;color:var(--dim);
+  text-decoration:none;border:1px solid var(--dim);padding:.45rem .9rem;letter-spacing:.1em;transition:all .3s;}
+.back:hover{color:var(--cyan);border-color:var(--cyan);}
+.title{font-family:'Press Start 2P',monospace;font-size:.85rem;color:var(--green);
+  text-shadow:0 0 18px rgba(0,255,136,.6);}
+.scores{width:100%;max-width:640px;display:grid;grid-template-columns:1fr auto 1fr;margin-bottom:.8rem;}
+.sb{text-align:center;padding:.6rem;border:1px solid var(--border);background:var(--panel);}
+.sb+.sb{border-left:none;}
+.sn{font-family:'Orbitron',sans-serif;font-size:1.6rem;font-weight:900;}
+.sn.p1{color:var(--cyan);}
+.sn.p2{color:var(--magenta);}
+.sn.mid{color:var(--dim);font-size:1rem;line-height:2;}
+.sl{font-family:'Orbitron',sans-serif;font-size:.5rem;color:var(--dim);letter-spacing:.12em;}
+.cw{position:relative;width:min(640px,96vw);border:1px solid var(--border);background:#020208;margin-bottom:.8rem;}
+.cw::before{content:'';position:absolute;inset:-2px;
+  background:linear-gradient(135deg,var(--green),var(--cyan),var(--magenta));z-index:-1;opacity:.4;}
+canvas{display:block;width:100%;}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;background:rgba(4,4,13,.9);z-index:10;}
+.ov.h{display:none;}
+.ot{font-family:'Press Start 2P',monospace;font-size:clamp(.85rem,3.5vw,1.4rem);
+  color:var(--gold);text-shadow:0 0 28px rgba(255,215,0,.7);text-align:center;margin-bottom:.6rem;}
+.os{font-family:'Orbitron',sans-serif;font-size:.6rem;color:var(--dim);letter-spacing:.12em;margin-bottom:1.4rem;}
+.ob{font-family:'Orbitron',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.2em;
+  padding:.8rem 2rem;background:var(--green);color:var(--bg);border:none;cursor:pointer;transition:all .25s;}
+.ob:hover{background:#fff;}
+.ctrl{width:100%;max-width:640px;display:grid;grid-template-columns:1fr 1fr;gap:.8rem;}
+.cb{border:1px solid var(--border);background:var(--panel);padding:.8rem 1rem;}
+.cb h4{font-family:'Orbitron',sans-serif;font-size:.55rem;color:var(--cyan);letter-spacing:.15em;margin-bottom:.5rem;}
+.cb p{font-size:.82rem;color:var(--dim);line-height:1.7;}
+.k{display:inline-block;font-family:'Orbitron',sans-serif;font-size:.5rem;
+  padding:.1rem .35rem;border:1px solid var(--border);color:var(--text);background:rgba(255,255,255,.05);}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a href="../index.html" class="back">← Hub</a>
+  <span class="title">Snakes</span>
+  <span style="width:70px"></span>
+</nav>
+<div class="scores">
+  <div class="sb"><div class="sn p1" id="sc1">0</div><div class="sl">P1 Length</div></div>
+  <div class="sb"><div class="sn mid">VS</div><div class="sl">Rounds</div></div>
+  <div class="sb"><div class="sn p2" id="sc2">0</div><div class="sl">P2 Length</div></div>
+</div>
+<div class="cw">
+  <canvas id="c" height="480"></canvas>
+  <div class="ov" id="ov">
+    <div class="ot">SNAKES</div>
+    <div class="os">Two players · One grid · Last one alive wins</div>
+    <button class="ob" onclick="startGame()">START GAME</button>
+  </div>
+</div>
+<div class="ctrl">
+  <div class="cb"><h4>// Player 1 (Cyan)</h4>
+    <p><span class="k">W</span><span class="k">A</span><span class="k">S</span><span class="k">D</span> — Direction</p></div>
+  <div class="cb"><h4>// Player 2 (Pink)</h4>
+    <p><span class="k">↑</span><span class="k">←</span><span class="k">↓</span><span class="k">→</span> — Direction</p></div>
+</div>
+
+<script>
+/* ─── SNAKES ENGINE ───────────────────────────────────────
+   Grid-based. Each cell = CELL px. Both snakes move simultaneously
+   at fixed tick rate. Direction queued to prevent reversing.
+   Game ends when a snake hits a wall, itself, or the other snake.
+─────────────────────────────────────────────────────────── */
+const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
+const CELL=16;
+let COLS,ROWS,W,H;
+let s1,s2,foods,tickInterval,running=false;
+const keys={};
+
+function resize(){
+  W=canvas.offsetWidth; H=480;
+  canvas.width=W; canvas.height=H;
+  COLS=Math.floor(W/CELL); ROWS=Math.floor(H/CELL);
+}
+
+function rnd(n){return Math.floor(Math.random()*n);}
+
+function freeCell(){
+  let pos;
+  const occupied=new Set([...s1.body,...s2.body].map(p=>p[0]+','+p[1]));
+  do{ pos=[rnd(COLS),rnd(ROWS)]; }while(occupied.has(pos[0]+','+pos[1]));
+  return pos;
+}
+
+function initGame(){
+  const cx=Math.floor(COLS/2), cy=Math.floor(ROWS/2);
+  s1={body:[[cx-6,cy],[cx-7,cy],[cx-8,cy]],dir:[1,0],next:[1,0],alive:true,color:'#00f5ff',glow:'rgba(0,245,255,.5)'};
+  s2={body:[[cx+6,cy],[cx+7,cy],[cx+8,cy]],dir:[-1,0],next:[-1,0],alive:true,color:'#ff00aa',glow:'rgba(255,0,170,.5)'};
+  foods=[];
+  for(let i=0;i<3;i++) spawnFood();
+}
+
+function spawnFood(){
+  if(foods.length>=5)return;
+  foods.push(freeCell());
+}
+
+window.addEventListener('keydown',e=>{
+  keys[e.key]=true;
+  const dirs={'w':[0,-1],'s':[0,1],'a':[-1,0],'d':[1,0],
+    'W':[0,-1],'S':[0,1],'A':[-1,0],'D':[1,0],
+    'ArrowUp':[0,-1],'ArrowDown':[0,1],'ArrowLeft':[-1,0],'ArrowRight':[1,0]};
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();
+  const d=dirs[e.key];
+  if(!d)return;
+  if(['w','s','a','d','W','S','A','D'].includes(e.key)){
+    // Only change if not reversing
+    if(s1.dir[0]+d[0]!==0||s1.dir[1]+d[1]!==0) s1.next=d;
+  } else {
+    if(s2.dir[0]+d[0]!==0||s2.dir[1]+d[1]!==0) s2.next=d;
+  }
+});
+
+function tick(){
+  if(!running)return;
+  s1.dir=s1.next; s2.dir=s2.next;
+
+  const move = (s)=>{
+    if(!s.alive)return;
+    const head=[s.body[0][0]+s.dir[0], s.body[0][1]+s.dir[1]];
+    s.body.unshift(head);
+    // Check food
+    const fi=foods.findIndex(f=>f[0]===head[0]&&f[1]===head[1]);
+    if(fi!==-1){ foods.splice(fi,1); spawnFood(); }
+    else s.body.pop();
+  };
+  move(s1); move(s2);
+
+  // Collision detection
+  const check=(s,other,name)=>{
+    if(!s.alive)return;
+    const [hx,hy]=s.body[0];
+    // Wall
+    if(hx<0||hx>=COLS||hy<0||hy>=ROWS){ s.alive=false; return; }
+    // Self
+    for(let i=1;i<s.body.length;i++)
+      if(s.body[i][0]===hx&&s.body[i][1]===hy){ s.alive=false; return; }
+    // Other snake
+    for(const [bx,by] of other.body)
+      if(bx===hx&&by===hy){ s.alive=false; return; }
+  };
+  check(s1,s2); check(s2,s1);
+
+  // Update scores
+  document.getElementById('sc1').textContent=s1.body.length;
+  document.getElementById('sc2').textContent=s2.body.length;
+
+  drawGame();
+
+  if(!s1.alive||!s2.alive){
+    running=false; clearInterval(tickInterval);
+    setTimeout(showResult,300);
+  }
+}
+
+function drawGame(){
+  ctx.fillStyle='#020208'; ctx.fillRect(0,0,W,H);
+  // Grid dots
+  ctx.fillStyle='rgba(0,245,255,.04)';
+  for(let x=0;x<COLS;x++) for(let y=0;y<ROWS;y++){
+    ctx.fillRect(x*CELL+CELL/2-1,y*CELL+CELL/2-1,2,2);
+  }
+  // Food
+  foods.forEach(([fx,fy])=>{
+    const px=fx*CELL+CELL/2, py=fy*CELL+CELL/2;
+    ctx.shadowColor='#ffd700'; ctx.shadowBlur=10;
+    ctx.beginPath(); ctx.arc(px,py,CELL*.35,0,Math.PI*2);
+    ctx.fillStyle='#ffd700'; ctx.fill();
+    ctx.shadowBlur=0;
+  });
+  // Snakes
+  [s1,s2].forEach(s=>{
+    if(!s.body.length)return;
+    s.body.forEach(([bx,by],i)=>{
+      const px=bx*CELL,py=by*CELL;
+      ctx.shadowColor=s.color; ctx.shadowBlur=i===0?14:4;
+      ctx.fillStyle=i===0?s.color:s.glow;
+      ctx.fillRect(px+1,py+1,CELL-2,CELL-2);
+      if(i===0){
+        // eyes
+        ctx.shadowBlur=0;
+        ctx.fillStyle='#fff';
+        const ex=px+CELL*.25+(s.dir[0]===1?CELL*.25:0);
+        const ey=py+CELL*.25+(s.dir[1]===1?CELL*.25:0);
+        ctx.fillRect(ex,ey,3,3);
+      }
+    });
+    ctx.shadowBlur=0;
+  });
+}
+
+function showResult(){
+  const ov=document.getElementById('ov');
+  ov.classList.remove('h');
+  let msg, sub;
+  if(!s1.alive&&!s2.alive){ msg='DRAW!'; sub='Both snakes crashed!'; }
+  else if(!s1.alive){ msg='🏆 Player 2 Wins!'; sub=`P2 length: ${s2.body.length}`; }
+  else { msg='🏆 Player 1 Wins!'; sub=`P1 length: ${s1.body.length}`; }
+  ov.querySelector('.ot').textContent=msg;
+  ov.querySelector('.os').textContent=sub;
+  ov.querySelector('.ob').textContent='Play Again';
+  ov.querySelector('.ob').onclick=startGame;
+}
+
+function startGame(){
+  resize(); initGame(); running=true;
+  document.getElementById('ov').classList.add('h');
+  clearInterval(tickInterval);
+  tickInterval=setInterval(tick,110);
+  drawGame();
+}
+
+window.addEventListener('resize',()=>{if(!running)resize();});
+resize();
+ctx.fillStyle='#020208'; ctx.fillRect(0,0,W,H);
+</script>
+</body>
+</html>

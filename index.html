@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>DJ's Games Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#04040d;--bg2:#080818;--cyan:#00f5ff;--magenta:#ff00aa;
+  --gold:#ffd700;--green:#00ff88;--panel:rgba(0,245,255,0.04);
+  --border:rgba(0,245,255,0.16);--text:#c8d8ff;--dim:#5a6a8a;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;
+  min-height:100vh;overflow-x:hidden;cursor:crosshair;}
+body::before{content:'';position:fixed;inset:0;z-index:9999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px);
+  pointer-events:none;}
+canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none;}
+
+.wrap{position:relative;z-index:2;max-width:1280px;margin:0 auto;padding:0 1.5rem;}
+
+/* ── HEADER ── */
+header{text-align:center;padding:3.5rem 0 2rem;border-bottom:1px solid var(--border);
+  position:relative;z-index:2;}
+.site-tag{font-family:'Orbitron',sans-serif;font-size:.6rem;letter-spacing:.35em;
+  color:var(--magenta);text-transform:uppercase;margin-bottom:1rem;
+  animation:fadeUp .5s ease both;}
+h1{font-family:'Press Start 2P',monospace;font-size:clamp(1.2rem,4vw,2.8rem);
+  color:#fff;text-shadow:0 0 30px rgba(0,245,255,.7),0 0 60px rgba(0,245,255,.3);
+  line-height:1.4;animation:fadeUp .6s .05s ease both;}
+h1 em{color:var(--cyan);font-style:normal;}
+.sub{font-size:1rem;color:var(--dim);margin-top:.9rem;font-weight:300;
+  letter-spacing:.05em;animation:fadeUp .6s .1s ease both;}
+.bar{width:100px;height:2px;margin:1.5rem auto 0;
+  background:linear-gradient(90deg,var(--magenta),var(--cyan));
+  box-shadow:0 0 10px var(--cyan);animation:expand .7s .2s ease both;}
+
+/* ── STATS ── */
+.stats{display:flex;justify-content:center;gap:3rem;flex-wrap:wrap;
+  padding:1.8rem 0;border-bottom:1px solid var(--border);}
+.stat{text-align:center;}
+.stat-n{font-family:'Orbitron',sans-serif;font-size:1.8rem;font-weight:900;
+  color:var(--gold);text-shadow:0 0 16px rgba(255,215,0,.5);}
+.stat-l{font-family:'Orbitron',sans-serif;font-size:.5rem;letter-spacing:.15em;
+  color:var(--dim);text-transform:uppercase;margin-top:.2rem;}
+
+/* ── SECTION ── */
+.sec{padding:2.5rem 0 .5rem;display:flex;align-items:center;gap:1rem;}
+.sec h2{font-family:'Orbitron',sans-serif;font-size:.75rem;font-weight:700;
+  letter-spacing:.25em;color:var(--cyan);white-space:nowrap;}
+.sec-line{flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent);}
+
+/* ── GRID ── */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+  gap:1.2rem;padding-bottom:4rem;}
+
+/* ── CARD ── */
+a.card{display:block;text-decoration:none;position:relative;
+  background:var(--panel);border:1px solid var(--border);
+  overflow:hidden;transition:transform .25s,box-shadow .25s;
+  animation:fadeUp .5s ease both;}
+a.card:hover{transform:translateY(-5px);
+  box-shadow:0 0 28px rgba(0,245,255,.12),0 0 0 1px var(--cyan);}
+a.card::before,a.card::after{content:'';position:absolute;
+  width:12px;height:12px;border-color:var(--cyan);border-style:solid;
+  transition:opacity .3s;opacity:0;z-index:3;}
+a.card::before{top:0;left:0;border-width:2px 0 0 2px;}
+a.card::after{bottom:0;right:0;border-width:0 2px 2px 0;}
+a.card:hover::before,a.card:hover::after{opacity:1;}
+.card-accent{height:2px;background:linear-gradient(90deg,var(--magenta),var(--cyan));}
+.card-glow{position:absolute;inset:0;
+  background:radial-gradient(circle at 50% 0%,rgba(0,245,255,.07),transparent 70%);
+  opacity:0;transition:opacity .3s;pointer-events:none;}
+a.card:hover .card-glow{opacity:1;}
+.card-ico{font-size:2.6rem;padding:1.5rem 1.2rem .6rem;line-height:1;
+  transition:transform .3s;filter:drop-shadow(0 0 10px rgba(0,245,255,.35));}
+a.card:hover .card-ico{transform:scale(1.15) rotate(-4deg);}
+.card-body{padding:0 1.2rem 1.2rem;}
+.card-name{font-family:'Orbitron',sans-serif;font-size:.78rem;font-weight:700;
+  letter-spacing:.08em;color:#fff;margin-bottom:.3rem;}
+.card-desc{font-size:.82rem;color:var(--dim);line-height:1.5;font-weight:300;margin-bottom:.8rem;}
+.card-tags{display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:.8rem;}
+.tag{font-family:'Orbitron',sans-serif;font-size:.45rem;font-weight:700;
+  letter-spacing:.1em;padding:.15rem .5rem;border:1px solid;}
+.t2p{border-color:var(--green);color:var(--green);}
+.tai{border-color:var(--magenta);color:var(--magenta);}
+.trt{border-color:#ff6600;color:#ff6600;}
+.ttr{border-color:var(--cyan);color:var(--cyan);}
+.play{display:inline-block;font-family:'Orbitron',sans-serif;
+  font-size:.55rem;font-weight:700;letter-spacing:.18em;
+  padding:.55rem 1.2rem;background:var(--cyan);color:var(--bg);
+  opacity:0;transform:translateY(5px);transition:all .25s;}
+a.card:hover .play{opacity:1;transform:translateY(0);}
+
+/* ── FOOTER ── */
+footer{border-top:1px solid var(--border);padding:2rem 0;
+  display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:1rem;position:relative;z-index:2;}
+.f-brand{font-family:'Press Start 2P',monospace;font-size:.55rem;
+  color:var(--cyan);text-shadow:0 0 14px rgba(0,245,255,.6);}
+.f-note{font-size:.8rem;color:var(--dim);}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes expand{from{width:0;opacity:0}to{width:100px;opacity:1}}
+
+@media(max-width:600px){
+  h1{font-size:1.1rem;}
+  .grid{grid-template-columns:1fr 1fr;gap:.8rem;}
+  .play{opacity:1;transform:none;}
+  .stats{gap:1.5rem;}
+}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+
+<header>
+  <div class="wrap">
+    <p class="site-tag">DJLexFolio · Creative Coding</p>
+    <h1>DJ's <em>Games</em> Hub</h1>
+    <p class="sub">11 Games · 10 Levels Each · AI Opponents · 2-Player Local · Offline Ready</p>
+    <div class="bar"></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="stats">
+    <div class="stat"><div class="stat-n">11</div><div class="stat-l">Enhanced Games</div></div>
+    <div class="stat"><div class="stat-n">10</div><div class="stat-l">Levels Each</div></div>
+    <div class="stat"><div class="stat-n">110+</div><div class="stat-l">Total Challenges</div></div>
+    <div class="stat"><div class="stat-n">100%</div><div class="stat-l">Offline</div></div>
+  </div>
+
+  <div class="sec"><h2>// ENHANCED Games (10 Levels + AI)</h2><div class="sec-line"></div></div>
+
+  <div class="grid">
+
+    <a class="card" href="penalty-enhanced.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">⚽</div>
+      <div class="card-body">
+        <div class="card-name">Penalty Kicks</div>
+        <div class="card-desc">10 difficulty levels. 5 AI tiers. Keeper pattern prediction.</div>
+        <div class="card-tags"><span class="tag trt">10 Levels</span><span class="tag tai">AI Mode</span><span class="tag ttr">Enhanced</span></div>
+        <span class="play">Play Enhanced →</span>
+      </div>
+    </a>
+
+    <a class="card" href="pingpong-enhanced.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">🏓</div>
+      <div class="card-body">
+        <div class="card-name">Ping Pong</div>
+        <div class="card-desc">10 levels with power-ups. Progressive AI scaling. Particle effects.</div>
+        <div class="card-tags"><span class="tag trt">10 Levels</span><span class="tag tai">AI Mode</span><span class="tag ttr">Enhanced</span></div>
+        <span class="play">Play Enhanced →</span>
+      </div>
+    </a>
+
+    <a class="card" href="airhockey-enhanced.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">🏒</div>
+      <div class="card-body">
+        <div class="card-name">Air Hockey</div>
+        <div class="card-desc">10 challenge levels. Shrinking goals. AI predictive tracking.</div>
+        <div class="card-tags"><span class="tag trt">10 Levels</span><span class="tag tai">AI Mode</span><span class="tag ttr">Enhanced</span></div>
+        <span class="play">Play Enhanced →</span>
+      </div>
+    </a>
+
+    <a class="card" href="snakes-enhanced.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">🐍</div>
+      <div class="card-body">
+        <div class="card-name">Snakes</div>
+        <div class="card-desc">10 grids (12×12 to 28×28). A* pathfinding AI. Obstacles.</div>
+        <div class="card-tags"><span class="tag trt">10 Levels</span><span class="tag tai">AI Mode</span><span class="tag ttr">Enhanced</span></div>
+        <span class="play">Play Enhanced →</span>
+      </div>
+    </a>
+
+    <a class="card" href="pool-enhanced.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">🎱</div>
+      <div class="card-body">
+        <div class="card-name">Pool</div>
+        <div class="card-desc">10 levels with friction scaling. Physics refinement. AI opponent.</div>
+        <div class="card-tags"><span class="tag trt">10 Levels</span><span class="tag tai">AI Mode</span><span class="tag ttr">Enhanced</span></div>
+        <span class="play">Play Enhanced →</span>
+      </div>
+    </a>
+
+    <a class="card" href="racing-enhanced.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">🏎️</div>
+      <div class="card-body">
+        <div class="card-name">Racing</div>
+        <div class="card-desc">10 tracks with weather effects. Track narrowing. AI racer.</div>
+        <div class="card-tags"><span class="tag trt">10 Levels</span><span class="tag tai">AI Mode</span><span class="tag ttr">Enhanced</span></div>
+        <span class="play">Play Enhanced →</span>
+      </div>
+    </a>
+
+    <a class="card" href="sumo-enhanced.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">🤼</div>
+      <div class="card-body">
+        <div class="card-name">Sumo</div>
+        <div class="card-desc">10 levels. Tournament mode. AI aggression scaling.</div>
+        <div class="card-tags"><span class="tag trt">10 Levels</span><span class="tag tai">AI Mode</span><span class="tag ttr">Enhanced</span></div>
+        <span class="play">Play Enhanced →</span>
+      </div>
+    </a>
+
+    <a class="card" href="minigolf-enhanced.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">⛳</div>
+      <div class="card-body">
+        <div class="card-name">Minigolf</div>
+        <div class="card-desc">9 holes × 10 levels. Progressive obstacles. Basket shrinking.</div>
+        <div class="card-tags"><span class="tag trt">10 Levels</span><span class="tag ttr">Single Player</span><span class="tag ttr">Enhanced</span></div>
+        <span class="play">Play Enhanced →</span>
+      </div>
+    </a>
+
+    <a class="card" href="sword-enhanced.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">⚔️</div>
+      <div class="card-body">
+        <div class="card-name">Sword Duels</div>
+        <div class="card-desc">10 levels. Combo system. HP scaling. AI learning.</div>
+        <div class="card-tags"><span class="tag trt">10 Levels</span><span class="tag tai">AI Mode</span><span class="tag ttr">Enhanced</span></div>
+        <span class="play">Play Enhanced →</span>
+      </div>
+    </a>
+
+    <a class="card" href="cricket-enhanced.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">🏏</div>
+      <div class="card-body">
+        <div class="card-name">Cricket</div>
+        <div class="card-desc">NEW! 10 levels. Batting/bowling. Ball spin. Runs tracking.</div>
+        <div class="card-tags"><span class="tag trt">10 Levels</span><span class="tag tai">AI Mode</span><span class="tag ttr">NEW</span></div>
+        <span class="play">Play Enhanced →</span>
+      </div>
+    </a>
+
+    <a class="card" href="basketball-enhanced.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">🏀</div>
+      <div class="card-body">
+        <div class="card-name">Basketball</div>
+        <div class="card-desc">NEW! 10 levels. Shoot mechanics. AI defending. Time-based.</div>
+        <div class="card-tags"><span class="tag trt">10 Levels</span><span class="tag tai">AI Mode</span><span class="tag ttr">NEW</span></div>
+        <span class="play">Play Enhanced →</span>
+      </div>
+    </a>
+
+  </div>
+
+  <div class="sec"><h2>// CLASSIC Games (Original)</h2><div class="sec-line"></div></div>
+
+  <div class="grid">
+
+    <a class="card" href="games/tictactoe.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">⭕</div>
+      <div class="card-body">
+        <div class="card-name">Tic Tac Toe</div>
+        <div class="card-desc">Classic 3×3 grid. Beat the unbeatable Minimax AI or challenge a friend.</div>
+        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag tai">AI Mode</span><span class="tag ttr">Turn-based</span></div>
+        <span class="play">Play Now →</span>
+      </div>
+    </a>
+
+    <a class="card" href="games/pingpong.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">🏓</div>
+      <div class="card-body">
+        <div class="card-name">Ping Pong</div>
+        <div class="card-desc">Canvas pong with spin physics. W/S vs Arrows. First to 7 wins.</div>
+        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag tai">AI Mode</span><span class="tag trt">Real-time</span></div>
+        <span class="play">Play Now →</span>
+      </div>
+    </a>
+
+    <a class="card" href="games/chess.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">♟️</div>
+      <div class="card-body">
+        <div class="card-name">Chess</div>
+        <div class="card-desc">Full rules chess with castling, en passant & promotion. Pass-and-play or vs AI.</div>
+        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag tai">AI Mode</span><span class="tag ttr">Turn-based</span></div>
+        <span class="play">Play Now →</span>
+      </div>
+    </a>
+
+    <a class="card" href="games/airhockey.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">🏒</div>
+      <div class="card-body">
+        <div class="card-name">Air Hockey</div>
+        <div class="card-desc">Frictionless puck physics. WASD vs arrows. Smash the puck into the net.</div>
+        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag trt">Real-time</span></div>
+        <span class="play">Play Now →</span>
+      </div>
+    </a>
+
+    <a class="card" href="games/snakes.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">🐍</div>
+      <div class="card-body">
+        <div class="card-name">Snakes</div>
+        <div class="card-desc">Two snakes, one grid. Eat food, grow longer, trap your opponent.</div>
+        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag trt">Real-time</span></div>
+        <span class="play">Play Now →</span>
+      </div>
+    </a>
+
+    <a class="card" href="games/pool.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">🎱</div>
+      <div class="card-body">
+        <div class="card-name">Pool</div>
+        <div class="card-desc">8-ball billiards. Drag to aim the cue. Sink solids or stripes then the 8.</div>
+        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag ttr">Turn-based</span></div>
+        <span class="play">Play Now →</span>
+      </div>
+    </a>
+
+    <a class="card" href="games/penalty.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">⚽</div>
+      <div class="card-body">
+        <div class="card-name">Penalty Kicks</div>
+        <div class="card-desc">Aim and shoot vs goalkeeper. 5 kicks each — most goals wins.</div>
+        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag tai">AI Mode</span><span class="tag ttr">Turn-based</span></div>
+        <span class="play">Play Now →</span>
+      </div>
+    </a>
+
+    <a class="card" href="games/sumo.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">🤼</div>
+      <div class="card-body">
+        <div class="card-name">Sumo</div>
+        <div class="card-desc">Physics-based pushing. Force your opponent outside the ring. Best of 5.</div>
+        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag trt">Real-time</span></div>
+        <span class="play">Play Now →</span>
+      </div>
+    </a>
+
+    <a class="card" href="games/minigolf.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">⛳</div>
+      <div class="card-body">
+        <div class="card-name">Minigolf</div>
+        <div class="card-desc">Drag to aim and set power. Bounce off walls. Fewest strokes wins 9 holes.</div>
+        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag ttr">Turn-based</span></div>
+        <span class="play">Play Now →</span>
+      </div>
+    </a>
+
+    <a class="card" href="games/racing.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">🏎️</div>
+      <div class="card-body">
+        <div class="card-name">Racing</div>
+        <div class="card-desc">Top-down track racing. WASD vs arrows. 3 laps — first to finish wins.</div>
+        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag trt">Real-time</span></div>
+        <span class="play">Play Now →</span>
+      </div>
+    </a>
+
+    <a class="card" href="games/sword.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">⚔️</div>
+      <div class="card-body">
+        <div class="card-name">Sword Duels</div>
+        <div class="card-desc">Side-scroll blade combat. Move, jump, attack, block. Drain opponent's HP.</div>
+        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag trt">Real-time</span></div>
+        <span class="play">Play Now →</span>
+      </div>
+    </a>
+
+  </div>
+</div>
+
+<footer>
+  <div class="wrap" style="width:100%;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.8rem;">
+    <span class="f-brand">DJ's Games Hub</span>
+    <span class="f-note">Part of DJLexFolio · All games run offline in your browser</span>
+  </div>
+</footer>
+
+<script>
+// Starfield
+(function(){
+  const c=document.getElementById('bg'),ctx=c.getContext('2d');
+  let stars=[];
+  function resize(){c.width=innerWidth;c.height=innerHeight;}
+  function init(){stars=Array.from({length:160},()=>({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.3+.2,a:Math.random(),s:Math.random()*.004+.001,d:Math.random()>.5?1:-1}));}
+  function draw(){ctx.clearRect(0,0,c.width,c.height);stars.forEach(s=>{s.a+=s.s*s.d;if(s.a>1||s.a<0)s.d*=-1;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle=`rgba(0,245,255,${s.a*.6})`;ctx.fill();});requestAnimationFrame(draw);}
+  window.addEventListener('resize',()=>{resize();init();});
+  resize();init();draw();
+})();
+// Stagger card animations
+document.querySelectorAll('.card').forEach((c,i)=>{c.style.animationDelay=i*.04+'s';});
+</script>
+</body>
+</html>

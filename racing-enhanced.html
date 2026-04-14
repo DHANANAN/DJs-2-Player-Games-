@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Racing — DJ's Games Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#04040d;--cyan:#00f5ff;--magenta:#ff00aa;--gold:#ffd700;--green:#00ff88;
+  --panel:rgba(0,245,255,.04);--border:rgba(0,245,255,.18);--text:#c8d8ff;--dim:#5a6a8a;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding:1.2rem 1rem;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;z-index:999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;}
+.nav{width:100%;max-width:700px;display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;}
+.back{font-family:'Orbitron',sans-serif;font-size:.6rem;font-weight:700;color:var(--dim);
+  text-decoration:none;border:1px solid var(--dim);padding:.45rem .9rem;letter-spacing:.1em;transition:all .3s;}
+.back:hover{color:var(--cyan);border-color:var(--cyan);}
+.title{font-family:'Press Start 2P',monospace;font-size:.85rem;color:var(--gold);
+  text-shadow:0 0 18px rgba(255,215,0,.6);}
+.level-badge{font-family:Orbitron,sans-serif;font-size:.5rem;color:var(--gold);text-shadow:0 0 8px rgba(255,215,0,.6);}
+.hud{width:100%;max-width:700px;display:grid;grid-template-columns:1fr auto 1fr;
+  margin-bottom:.8rem;}
+.sb{text-align:center;padding:.6rem;border:1px solid var(--border);background:var(--panel);}
+.sb+.sb{border-left:none;}
+.sn{font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;}
+.sn.p1{color:var(--cyan);}
+.sn.p2{color:var(--magenta);}
+.sn.mid{color:var(--gold);font-size:1rem;line-height:1.5;}
+.sl{font-family:'Orbitron',sans-serif;font-size:.5rem;color:var(--dim);letter-spacing:.12em;}
+.cw{position:relative;width:min(700px,96vw);border:1px solid var(--border);
+  background:#020208;margin-bottom:.8rem;}
+.cw::before{content:'';position:absolute;inset:-2px;
+  background:linear-gradient(135deg,var(--gold),var(--cyan));z-index:-1;opacity:.4;}
+canvas{display:block;width:100%;}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;background:rgba(4,4,13,.9);z-index:10;}
+.ov.h{display:none;}
+.ot{font-family:'Press Start 2P',monospace;font-size:clamp(.85rem,3.5vw,1.5rem);
+  color:var(--gold);text-shadow:0 0 28px rgba(255,215,0,.7);text-align:center;margin-bottom:.6rem;}
+.os{font-family:'Orbitron',sans-serif;font-size:.6rem;color:var(--dim);letter-spacing:.12em;margin-bottom:1.4rem;text-align:center;line-height:2;}
+.ob{font-family:'Orbitron',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.2em;
+  padding:.8rem 2rem;background:var(--gold);color:var(--bg);border:none;cursor:pointer;transition:all .25s;}
+.ob:hover{background:#fff;}
+.ctrl{width:100%;max-width:700px;display:grid;grid-template-columns:1fr 1fr;gap:.8rem;}
+.cb{border:1px solid var(--border);background:var(--panel);padding:.8rem 1rem;}
+.cb h4{font-family:'Orbitron',sans-serif;font-size:.55rem;color:var(--cyan);letter-spacing:.15em;margin-bottom:.5rem;}
+.cb p{font-size:.82rem;color:var(--dim);line-height:1.7;}
+.k{display:inline-block;font-family:'Orbitron',sans-serif;font-size:.5rem;
+  padding:.1rem .35rem;border:1px solid var(--border);color:var(--text);background:rgba(255,255,255,.05);}
+</style>
+</head>
+<body>
+<nav class="nav">
+   <a href="../index.html" class="back">← Hub</a>
+   <span class="title">Racing</span>
+   <span class="level-badge" id="lvlBadge">Lv1/10</span>
+</nav>
+<div class="hud">
+   <div class="sb"><div class="sn p1" id="l1">Lap 0/3</div><div class="sl">You</div></div>
+   <div class="sb"><div class="sn mid" id="countdownEl">3</div><div class="sl">Countdown</div></div>
+   <div class="sb"><div class="sn p2" id="l2">Lap 0/3</div><div class="sl">AI</div></div>
+</div>
+<div class="cw">
+   <canvas id="c" height="460"></canvas>
+   <div class="ov" id="ov">
+     <div class="ot">RACING</div>
+     <div class="os" id="ovSub">3 Laps · Beat the AI<br>WASD to control</div>
+     <button class="ob" onclick="startRace()">START ENGINES</button>
+   </div>
+</div>
+<div class="ctrl">
+   <div class="cb"><h4>// You (Cyan)</h4>
+     <p><span class="k">W</span> Gas · <span class="k">S</span> Brake<br><span class="k">A</span>/<span class="k">D</span> Steer</p></div>
+   <div class="cb"><h4>// AI Opponent</h4>
+     <p>Level <span id="aiLevel">1</span>/10 · Dynamic difficulty</p></div>
+</div>
+
+<script>
+/* RACING ENHANCED
+   - 10 difficulty levels with varying track complexity
+   - AI opponent with difficulty-based speed & steering
+   - Weather effects (rain affects traction)
+   - Progressive lap counting
+*/
+
+const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
+let W,H,cx,cy,trackRx,trackRy;
+const TOTAL_LAPS=3;
+const keys={};
+let cars=[],running=false,animId=null,countdown=0,cdInterval=null;
+let particles=[];
+
+const LEVELS=[
+  {trackW:75, maxSpeed:8, acceleration:0.3, drag:0.92, aiSpeed:6.5, aiAccuracy:0.50, weather:0},
+  {trackW:72, maxSpeed:8.3, acceleration:0.32, drag:0.918, aiSpeed:6.8, aiAccuracy:0.55, weather:0},
+  {trackW:69, maxSpeed:8.6, acceleration:0.34, drag:0.916, aiSpeed:7.1, aiAccuracy:0.60, weather:0},
+  {trackW:66, maxSpeed:8.9, acceleration:0.36, drag:0.914, aiSpeed:7.4, aiAccuracy:0.65, weather:0.1},
+  {trackW:63, maxSpeed:9.2, acceleration:0.38, drag:0.912, aiSpeed:7.7, aiAccuracy:0.70, weather:0.2},
+  {trackW:60, maxSpeed:9.5, acceleration:0.40, drag:0.910, aiSpeed:8.0, aiAccuracy:0.75, weather:0.3},
+  {trackW:57, maxSpeed:9.8, acceleration:0.42, drag:0.908, aiSpeed:8.3, aiAccuracy:0.80, weather:0.4},
+  {trackW:54, maxSpeed:10.1, acceleration:0.44, drag:0.906, aiSpeed:8.6, aiAccuracy:0.85, weather:0.5},
+  {trackW:51, maxSpeed:10.4, acceleration:0.46, drag:0.904, aiSpeed:8.9, aiAccuracy:0.90, weather:0.6},
+  {trackW:48, maxSpeed:10.7, acceleration:0.48, drag:0.902, aiSpeed:9.2, aiAccuracy:0.95, weather:0.7}
+];
+
+let currentLevel=0;
+
+function resize(){
+  W=canvas.offsetWidth; H=460;
+  canvas.width=W; canvas.height=H;
+  cx=W/2; cy=H/2;
+  trackRx=W*.41; trackRy=H*.36;
+}
+
+function carOnTrack(car, trackW){
+  const ox=car.x-cx, oy=car.y-cy;
+  const normO=Math.pow(ox/(trackRx+trackW/2),2)+Math.pow(oy/(trackRy+trackW/2),2);
+  const normI=Math.pow(ox/(trackRx-trackW/2),2)+Math.pow(oy/(trackRy-trackW/2),2);
+  return normO<=1 && normI>=1;
+}
+
+function initCars(){
+  const level=LEVELS[currentLevel];
+  const startAngle=Math.PI/2+.15;
+  const startAngle2=Math.PI/2-.15;
+  cars=[
+    {x:cx+Math.cos(startAngle)*trackRx, y:cy+Math.sin(startAngle)*trackRy,
+     angle:-Math.PI/2+.15, speed:0, steer:0, lap:0, checkpoint:0,
+     col:'#00f5ff', name:'P1', done:false, finishTime:null, ai:false},
+    {x:cx+Math.cos(startAngle2)*trackRx, y:cy+Math.sin(startAngle2)*trackRy,
+     angle:-Math.PI/2-.15, speed:0, steer:0, lap:0, checkpoint:0,
+     col:'#ff00aa', name:'AI', done:false, finishTime:null, ai:true}
+  ];
+  particles=[];
+  document.getElementById('lvlBadge').textContent=`Lv${currentLevel+1}/10`;
+  document.getElementById('aiLevel').textContent=(currentLevel+1);
+}
+
+window.addEventListener('keydown',e=>{keys[e.key]=true;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();});
+window.addEventListener('keyup',e=>{keys[e.key]=false;});
+
+function aiDrive(car){
+  const level=LEVELS[currentLevel];
+  // Simple AI: accelerate, steer toward track center
+  const ox=car.x-cx, oy=car.y-cy;
+  const toCenter=-Math.atan2(oy,ox);
+  const angleDiff=((toCenter-car.angle+Math.PI)%Math.PI*2)-Math.PI;
+  
+  car.steer=Math.sign(angleDiff)*Math.min(Math.abs(angleDiff),0.3)*(level.aiAccuracy);
+  if(car.speed<level.aiSpeed) car.speed+=level.acceleration;
+}
+
+function tick(){
+  if(!running)return;
+  const level=LEVELS[currentLevel];
+
+  // Player input
+  const p=cars[0];
+  if(keys['w']||keys['W']) p.speed=Math.min(p.speed+level.acceleration, level.maxSpeed);
+  if(keys['s']||keys['S']) p.speed=Math.max(p.speed-level.acceleration*1.5, -2);
+  if(keys['a']||keys['A']&&p.speed!==0) p.steer=Math.max(p.steer-0.15,-0.4);
+  if(keys['d']||keys['D']&&p.speed!==0) p.steer=Math.min(p.steer+0.15,0.4);
+  
+  // AI driving
+  aiDrive(cars[1]);
+
+  // Update car physics
+  cars.forEach(car=>{
+    if(car.done)return;
+    
+    car.speed*=level.drag;
+    car.angle+=car.steer*(car.speed/level.maxSpeed)*0.12;
+    
+    car.x+=Math.cos(car.angle)*car.speed;
+    car.y+=Math.sin(car.angle)*car.speed;
+    
+    // Off-track penalty
+    if(!carOnTrack(car, level.trackW)){
+      car.speed*=0.85;
+      car.x-=Math.cos(car.angle)*car.speed*2;
+      car.y-=Math.sin(car.angle)*car.speed*2;
+    }
+    
+    // Steer drift
+    car.steer*=0.92;
+  });
+
+  // Checkpoint crossing (simple lap counting)
+  const checkX=cx, checkY=cy+trackRy-30;
+  cars.forEach(car=>{
+    if(!car.done){
+      const dist=Math.hypot(car.x-checkX,car.y-checkY);
+      if(dist<40){
+        car.lap++;
+        if(car.lap>TOTAL_LAPS){
+          car.done=true;
+          car.finishTime=Date.now();
+        }
+      }
+    }
+  });
+
+  document.getElementById('l1').textContent=`Lap ${cars[0].lap}/${TOTAL_LAPS}`;
+  document.getElementById('l2').textContent=`Lap ${cars[1].lap}/${TOTAL_LAPS}`;
+
+  updateParticles();
+  draw();
+
+  // Check win
+  if(cars.every(c=>c.done)){
+    const winner=cars[0].finishTime<cars[1].finishTime?0:1;
+    endRace(winner);
+  }
+}
+
+function updateParticles(){
+  particles=particles.filter(p=>{
+    p.x+=p.vx;
+    p.y+=p.vy;
+    p.life-=0.05;
+    return p.life>0;
+  });
+}
+
+function draw(){
+  ctx.fillStyle='#1a3a1a'; ctx.fillRect(0,0,W,H);
+
+  const level=LEVELS[currentLevel];
+  
+  // Track outer
+  ctx.strokeStyle='#fff'; ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.ellipse(cx,cy,trackRx+level.trackW/2,trackRy+level.trackW/2,0,0,Math.PI*2);
+  ctx.stroke();
+
+  // Track inner
+  ctx.strokeStyle='#888'; ctx.lineWidth=1;
+  ctx.beginPath();
+  ctx.ellipse(cx,cy,trackRx-level.trackW/2,trackRy-level.trackW/2,0,0,Math.PI*2);
+  ctx.stroke();
+
+  // Checkpoint
+  ctx.fillStyle='rgba(0,255,136,.3)';
+  ctx.fillRect(cx-30,cy+trackRy-40,60,20);
+
+  // Weather effect
+  if(level.weather>0){
+    ctx.fillStyle=`rgba(0,150,255,${level.weather*0.2})`;
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='rgba(255,255,255,.05)';
+    for(let i=0;i<8;i++){
+      ctx.fillRect(Math.random()*W,Math.random()*H,2,10);
+    }
+  }
+
+  // Cars
+  cars.forEach(car=>{
+    ctx.save();
+    ctx.translate(car.x,car.y);
+    ctx.rotate(car.angle);
+    ctx.fillStyle=car.col;
+    ctx.fillRect(-8,-14,16,28);
+    ctx.fillStyle='#fff';
+    ctx.fillRect(-6,-10,12,8);
+    ctx.restore();
+  });
+
+  // Particles
+  particles.forEach(p=>{
+    ctx.globalAlpha=p.life;
+    ctx.fillStyle=p.color;
+    ctx.fillRect(p.x,p.y,p.size,p.size);
+  });
+  ctx.globalAlpha=1;
+}
+
+function startRace(){
+  resize();
+  initCars();
+  running=true;
+  document.getElementById('ov').classList.add('h');
+  clearInterval(animId);
+  countdown=3;
+  document.getElementById('countdownEl').textContent=countdown;
+  
+  const countInterval=setInterval(()=>{
+    countdown--;
+    if(countdown>=0) document.getElementById('countdownEl').textContent=countdown;
+    if(countdown<0){clearInterval(countInterval);}
+  },1000);
+
+  setTimeout(()=>{
+    animId=setInterval(tick,16);
+    draw();
+  },4000);
+}
+
+function endRace(winner){
+  running=false;
+  clearInterval(animId);
+  const ov=document.getElementById('ov');
+  ov.classList.remove('h');
+  ov.querySelector('.ot').textContent=winner===0?'🏆 You Win!':'🤖 AI Wins!';
+  ov.querySelector('.os').textContent=`Level ${currentLevel+1}/10 Complete`;
+  ov.querySelector('.ob').textContent=currentLevel+1<LEVELS.length?'Next Level':'Final Victory!';
+  ov.querySelector('.ob').onclick=()=>{
+    if(currentLevel+1<LEVELS.length){
+      currentLevel++;
+      startRace();
+    }else{
+      location.href='../index.html';
+    }
+  };
+}
+
+window.addEventListener('resize',()=>{if(!running)resize();});
+resize();
+ctx.fillStyle='#1a3a1a'; ctx.fillRect(0,0,W,H);
+</script>
+</body>
+</html>

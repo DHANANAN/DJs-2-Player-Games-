@@ -1,0 +1,17 @@
+[build]
+  command = "echo 'Building...'"
+  publish = "."
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[context.production]
+  command = "echo 'Production build complete'"
+
+[context.deploy-preview]
+  command = "echo 'Preview build complete'"
+
+[context.branch-deploy]
+  command = "echo 'Branch deploy complete'"

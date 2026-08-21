@@ -791,6 +791,7 @@ const TAG_COLORS = {
 const track = document.getElementById('dockTrack');
 let activeIdx = 0;
 let previewOpen = false;
+let hoverDwellTimer = null;
 
 GAMES.forEach((g, i) => {
   const el = document.createElement('div');
@@ -803,17 +804,45 @@ GAMES.forEach((g, i) => {
     <div class="dock-ico">${g.ico}</div>
     <div class="dock-name">${g.name}</div>
     <div class="dock-dot"></div>`;
-  el.addEventListener('click', () => selectGame(i, true));
-  el.addEventListener('mouseenter', () => {
-    if (!isDragging) selectGame(i, false);
+
+  // Left-click selects & centers
+  el.addEventListener('click', () => {
+    clearTimeout(hoverDwellTimer);
+    selectGame(i, true, true);
   });
+
+  // Right-click directly launches the game!
+  el.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    playVintageSound(580);
+    window.location.href = g.href;
+  });
+
+  // Smooth hover: updates preview without jerking, auto-centers on dwell
+  el.addEventListener('mouseenter', () => {
+    if (isDragging) return;
+    clearTimeout(hoverDwellTimer);
+    // Instant lightweight preview & sound without sudden track repositioning
+    selectGame(i, false, false);
+    // Gentle dwell: auto-center if user hovers on item
+    hoverDwellTimer = setTimeout(() => {
+      if (!isDragging && activeIdx === i) {
+        centreOnActive();
+      }
+    }, 1200);
+  });
+
+  el.addEventListener('mouseleave', () => {
+    clearTimeout(hoverDwellTimer);
+  });
+
   el.addEventListener('keydown', e => { if (e.key === 'Enter') window.location.href = g.href; });
   track.appendChild(el);
 });
 
 function getItems() { return Array.from(track.querySelectorAll('.dock-item')); }
 
-function selectGame(idx, toggle) {
+function selectGame(idx, toggle, shouldCenter = true) {
   const wasActive = activeIdx === idx && previewOpen;
   const oldIdx = activeIdx;
   activeIdx = Math.max(0, Math.min(GAMES.length - 1, idx));
@@ -830,7 +859,9 @@ function selectGame(idx, toggle) {
   }
 
   updateDockState();
-  centreOnActive();
+  if (shouldCenter) {
+    centreOnActive();
+  }
 }
 
 function updateDockState() {
@@ -853,7 +884,7 @@ function centreOnActive() {
   const viewCentre = trackRect.left + trackRect.width / 2;
   const diff = elCentre - viewCentre;
   
-  track.style.transition = 'transform .35s cubic-bezier(.25,.46,.45,.94)';
+  track.style.transition = 'transform .45s cubic-bezier(.22, 1, .36, 1)';
   currentTranslate -= diff;
   track.style.transform = `translateX(${currentTranslate}px)`;
 }
@@ -988,10 +1019,16 @@ dockWrap.addEventListener('mouseleave', () => {
 window.addEventListener('load', () => {
   applyTheme(currentTheme);
   setTimeout(() => {
-    selectGame(0, false);
+    selectGame(0, false, true);
     openPreview(0);
   }, 250);
-  document.querySelectorAll('.card').forEach((c, i) => { c.style.animationDelay = i * 0.035 + 's'; });
+  document.querySelectorAll('.card').forEach((c, i) => {
+    c.style.animationDelay = i * 0.035 + 's';
+    c.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      window.location.href = c.href;
+    });
+  });
 });
 </script>
 </body>

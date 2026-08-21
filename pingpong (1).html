@@ -5,6 +5,46 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Ping Pong — DJ's Games Hub</title>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <style id="dj-global-theme-style">
+  /* ── GLOBAL THEME OVERRIDES ── */
+  html.theme-gold, body.theme-gold {
+    --bg: #0c0a04 !important;
+    --cyan: #ffd700 !important;
+    --magenta: #e6a100 !important;
+    --gold: #ffe066 !important;
+    --green: #c4a000 !important;
+    --border: rgba(255, 215, 0, 0.28) !important;
+    --panel: rgba(255, 215, 0, 0.05) !important;
+    --text: #ffebb3 !important;
+    --dim: #8a7343 !important;
+    background-color: #0c0a04 !important;
+    background-image: linear-gradient(rgba(255, 215, 0, 0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 215, 0, 0.04) 1px, transparent 1px) !important;
+    background-size: 28px 28px !important;
+  }
+  html.theme-retro, body.theme-retro {
+    --bg: #020b05 !important;
+    --cyan: #39ff14 !important;
+    --magenta: #ffaa00 !important;
+    --gold: #39ff14 !important;
+    --green: #39ff14 !important;
+    --border: rgba(57, 255, 20, 0.28) !important;
+    --panel: rgba(57, 255, 20, 0.06) !important;
+    --text: #b3ffd9 !important;
+    --dim: #326943 !important;
+    background-color: #020b05 !important;
+  }
+  html.theme-retro body::after {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 10000;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+    background-size: 100% 3px, 6px 100%;
+  }
+  </style>
+  <script>
+  (function(){
+    const t = localStorage.getItem('djhub_theme') || 'neon';
+    document.documentElement.className = 'theme-' + t;
+  })();
+  </script>
   <style>
     :root {
       --bg: #04040d; --cyan: #00f5ff; --magenta: #ff00aa;

@@ -513,10 +513,43 @@ footer { border-top: 1px solid var(--border); padding: 2rem 0 5rem; display: fle
       </div>
     </a>
 
+    <a class="card" href="checkers.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">🏁</div>
+      <div class="card-body">
+        <div class="card-name">Checkers</div>
+        <div class="card-desc">8×8 Draughts with diagonal jump multi-captures, King crowns, and FAI / HAI master bots.</div>
+        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag tfai">FAI</span><span class="tag thai">HAI</span><span class="tag ttr">Turn-based</span></div>
+        <span class="play">Play Now →</span>
+      </div>
+    </a>
+
   </div>
 
   <div class="sec"><h2>// Solo &amp; Physics Games</h2><div class="sec-line"></div></div>
   <div class="grid">
+
+    <a class="card" href="spaceinvaders.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">👾</div>
+      <div class="card-body">
+        <div class="card-name">Galaxy Invaders</div>
+        <div class="card-desc">Classic retro arcade space shooter. Defend Earth against alien waves, bunker shields &amp; mystery UFOs.</div>
+        <div class="card-tags"><span class="tag tsolo">Solo</span><span class="tag trt">Arcade</span><span class="tag tmob">Touch</span></div>
+        <span class="play">Play Now →</span>
+      </div>
+    </a>
+
+    <a class="card" href="runner.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">🏃</div>
+      <div class="card-body">
+        <div class="card-name">Cyber Runner</div>
+        <div class="card-desc">High-speed infinite cyberpunk runner. Swipe Up to Jump/Double-Jump &amp; Swipe Down to slide under lasers.</div>
+        <div class="card-tags"><span class="tag tsolo">Solo</span><span class="tag trt">Endless</span><span class="tag tmob">Swipe</span></div>
+        <span class="play">Play Now →</span>
+      </div>
+    </a>
 
     <a class="card" href="slingshot.html">
       <div class="card-accent"></div><div class="card-glow"></div>
@@ -735,6 +768,9 @@ const GAMES = [
   {ico:'⚽',name:'Penalty Kicks',href:'penalty.html',desc:'Shoot & dive in 5 penalty kicks each vs FAI & HAI goalkeepers.',tags:['2 Player','FAI Mode','HAI Mode','Touch']},
   {ico:'⭕',name:'Tic Tac Toe',href:'tictactoe (1).html',desc:'3×3 grid battles vs FAI (friendly practice) or HAI (Minimax master).',tags:['2 Player','FAI Mode','HAI Mode','Turn-based']},
   {ico:'♟️',name:'Chess',href:'chess (1).html',desc:'Full rules chess with promotion & castling. Challenge FAI or deep minimax HAI.',tags:['2 Player','FAI Mode','HAI Mode','Turn-based']},
+  {ico:'🏁',name:'Checkers',href:'checkers.html',desc:'8×8 Draughts with diagonal jumps, multi-captures & King crowns vs FAI / HAI.',tags:['2 Player','FAI Mode','HAI Mode','Turn-based']},
+  {ico:'👾',name:'Invaders',href:'spaceinvaders.html',desc:'Retro arcade space shooter. Defend Earth against alien waves & mystery UFOs.',tags:['Solo','Arcade','Real-time','Touch']},
+  {ico:'🏃',name:'Cyber Runner',href:'runner.html',desc:'Endless high-speed cyberpunk runner. Swipe Up to Jump, Swipe Down to Slide.',tags:['Solo','Endless','Swipe']},
   {ico:'🐦',name:'Slingshot',href:'slingshot.html',desc:'Classic keypad Angry Birds physics! Solid ground & Endless Procedural Levels.',tags:['Solo','Physics','Endless Levels','Touch Drag']},
   {ico:'🔢',name:'2048',href:'game2048.html',desc:'Slide & merge numbered tiles with full mobile swipe gesture support.',tags:['Solo','Puzzle','Full Swipe']},
   {ico:'🟦',name:'Tetris',href:'tetris.html',desc:'Ghost piece, hold queue, wall kicks, level speed up, touch swipe support.',tags:['Solo','Real-time','Swipe']}
@@ -746,7 +782,7 @@ const TAG_COLORS = {
   'Solo':'#8888ff', '3D':'#ff66ff', 'Touch Swipe':'#44ff88',
   'Touch Drag':'#44ff88', 'Touch Aim':'#44ff88', 'Touch Put':'#44ff88',
   'Swipe':'#44ff88', 'Full Swipe':'#44ff88', 'Swipe Lane':'#ffaa00',
-  'Physics':'#ff6600', 'Endless Levels':'#ffd700'
+  'Physics':'#ff6600', 'Endless Levels':'#ffd700', 'Arcade':'#ff66ff', 'Endless':'#00f5ff'
 };
 
 // ═══════════════════════════════════════════════════════
@@ -768,6 +804,9 @@ GAMES.forEach((g, i) => {
     <div class="dock-name">${g.name}</div>
     <div class="dock-dot"></div>`;
   el.addEventListener('click', () => selectGame(i, true));
+  el.addEventListener('mouseenter', () => {
+    if (!isDragging) selectGame(i, false);
+  });
   el.addEventListener('keydown', e => { if (e.key === 'Enter') window.location.href = g.href; });
   track.appendChild(el);
 });

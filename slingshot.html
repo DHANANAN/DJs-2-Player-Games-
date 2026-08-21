@@ -6,6 +6,48 @@
 <title>Slingshot 🐦 — DJ's Games Hub</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+<style id="dj-global-theme-style">
+/* ── GLOBAL THEME OVERRIDES ── */
+html.theme-gold, body.theme-gold {
+  --bg: #0c0a04 !important;
+  --cyan: #ffd700 !important;
+  --magenta: #e6a100 !important;
+  --gold: #ffe066 !important;
+  --green: #c4a000 !important;
+  --orange: #ffb700 !important;
+  --border: rgba(255, 215, 0, 0.28) !important;
+  --panel: rgba(255, 215, 0, 0.05) !important;
+  --text: #ffebb3 !important;
+  --dim: #8a7343 !important;
+  background-color: #0c0a04 !important;
+  background-image: linear-gradient(rgba(255, 215, 0, 0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 215, 0, 0.04) 1px, transparent 1px) !important;
+  background-size: 28px 28px !important;
+}
+html.theme-retro, body.theme-retro {
+  --bg: #020b05 !important;
+  --cyan: #39ff14 !important;
+  --magenta: #ffaa00 !important;
+  --gold: #39ff14 !important;
+  --green: #39ff14 !important;
+  --orange: #39ff14 !important;
+  --border: rgba(57, 255, 20, 0.28) !important;
+  --panel: rgba(57, 255, 20, 0.06) !important;
+  --text: #b3ffd9 !important;
+  --dim: #326943 !important;
+  background-color: #020b05 !important;
+}
+html.theme-retro body::after {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 10000;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  background-size: 100% 3px, 6px 100%;
+}
+</style>
+<script>
+(function(){
+  const t = localStorage.getItem('djhub_theme') || 'neon';
+  document.documentElement.className = 'theme-' + t;
+})();
+</script>
 <style>
 :root{--bg:#04040d;--cyan:#00f5ff;--magenta:#ff00aa;--gold:#ffd700;--green:#00ff88;--orange:#ff6600;
   --panel:rgba(0,245,255,.04);--border:rgba(0,245,255,.18);--text:#c8d8ff;--dim:#5a6a8a;}
@@ -65,10 +107,10 @@ canvas{display:block;width:100%;touch-action:none;}
   <div class="hud-box"><div class="hud-n" id="pigsEl">0</div><div class="hud-l">Pigs Left</div></div>
   <div class="hud-box" style="flex:1">
     <div class="lb-row" id="lvlBtns">
-      <button class="lb active" onclick="selectLevel(0)">Lvl 1</button>
+      <button class="lb" onclick="selectLevel(0)">Lvl 1</button>
       <button class="lb" onclick="selectLevel(1)">Lvl 2</button>
       <button class="lb" onclick="selectLevel(2)">Lvl 3</button>
-      <button class="lb endless" id="btnEndless" onclick="selectEndless()">♾️ Endless Mode</button>
+      <button class="lb endless active" id="btnEndless" onclick="selectEndless()">♾️ Endless Mode</button>
     </div>
   </div>
   <div class="bird-q" id="birdQ"></div>
@@ -79,8 +121,8 @@ canvas{display:block;width:100%;touch-action:none;}
   <div class="ov" id="ov">
     <div class="ot">🐦 SLINGSHOT</div>
     <div class="os">Drag the bird from the slingshot &amp; release to launch!<br>
-      🔴 Red: Classic strike · 🔵 Blue: Tap to Split · ⚫ Black: Bomb Blast<br>
-      Solid Ground &amp; Endless Procedural Castle Levels!</div>
+      🔴 Red: Impact · 🔵 Blue: Tap mid-air to Split · ⚫ Black: Bomb Blast<br>
+      Rock-Solid Architecture &amp; Balanced Endless Castle Levels!</div>
     <button class="ob" onclick="startLevel()">LAUNCH LEVEL</button>
   </div>
 </div>
@@ -88,32 +130,37 @@ canvas{display:block;width:100%;touch-action:none;}
 <p class="tip">🖱️ Drag bird · 📱 Touch drag · Tap screen mid-air to trigger special bird power!</p>
 
 <script>
-const {Engine, Bodies, Body, World, Events, Composite, Vector} = Matter;
+const {Engine, Bodies, Body, World, Events, Composite} = Matter;
 const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
 const cwEl=document.getElementById('cw');
 
-let W, H, slX, slY;
+let W, H, slX, slY, groundY;
 function resize(){
   W=Math.min(800, window.innerWidth-12);
-  H=Math.round(W*0.52);
+  H=Math.round(W*0.54);
   canvas.width=W; canvas.height=H;
   cwEl.style.height=H+'px';
-  slX=Math.round(W*0.18);
-  slY=Math.round(H*0.72);
+  slX=Math.round(W*0.16);
+  groundY=H - 24;
+  slY=groundY - 50;
 }
 resize();
 
-const engine=Engine.create({gravity:{y:1.8}});
+const engine=Engine.create({
+  gravity:{y:1.6},
+  positionIterations: 8,
+  velocityIterations: 8
+});
 const world=engine.world;
 
 const MATS={
-  wood:{fill:'#8B4513',stroke:'#A0522D',hp:3,density:.0012},
-  stone:{fill:'#607080',stroke:'#8090a0',hp:6,density:.0035},
-  glass:{fill:'rgba(150,220,255,.5)',stroke:'#87CEEB',hp:1,density:.0006}
+  wood:{fill:'#8B4513',stroke:'#A0522D',hp:4,density:0.0014,restitution:0.05,friction:0.8},
+  stone:{fill:'#607080',stroke:'#8090a0',hp:7,density:0.0035,restitution:0.02,friction:0.9},
+  glass:{fill:'rgba(150,220,255,.55)',stroke:'#87CEEB',hp:2,density:0.0008,restitution:0.05,friction:0.6}
 };
 
 const bodyData=new Map();
-let gameRunning=false, currentLevel=0, isEndless=false, endlessStage=1, totalScore=0;
+let gameRunning=false, currentLevel=0, isEndless=true, endlessStage=1, totalScore=0;
 let birdQueue=[], birdType='r', birdLaunched=false, specialUsed=false;
 let bird=null, currentBirdIndex=0;
 let dragging=false, dragX=0, dragY=0;
@@ -121,19 +168,27 @@ const MAX_DRAG=85;
 let particles=[], explosionFx=[];
 let levelReadyTime=0;
 
-// Setup single collision handler
+// Setup single collision handler with settling safety threshold
 Events.on(engine, 'collisionStart', ev => {
-  if(Date.now() - levelReadyTime < 800) return; // Prevent initial spawn drop explosions!
+  if(Date.now() - levelReadyTime < 1000) return; // Prevent initial spawn vibrations from breaking structures!
   
   ev.pairs.forEach(({bodyA, bodyB, collision}) => {
-    const imp = collision.depth * 2.2;
-    if(imp < 1.0) return;
+    const depth = collision.depth;
+    if(depth < 1.2) return;
+
+    // Is bird involved?
+    const isBirdHit = (bodyData.get(bodyA.id)?.isBird || bodyData.get(bodyB.id)?.isBird);
+    const damageMultiplier = isBirdHit ? 2.5 : 1.0;
 
     [bodyA, bodyB].forEach(b => {
       const d = bodyData.get(b.id);
-      if(!d) return;
-      d.hp -= Math.floor(imp * 0.6);
-      if(d.hp <= 0) setTimeout(()=>destroyBody(b, d), 20);
+      if(!d || d.isBird) return;
+      
+      const dmg = Math.floor(depth * damageMultiplier);
+      if(dmg >= 1){
+        d.hp -= dmg;
+        if(d.hp <= 0) setTimeout(()=>destroyBody(b, d), 15);
+      }
     });
   });
 });
@@ -152,52 +207,156 @@ function selectEndless(){
   startLevel();
 }
 
-function generateProceduralCastle(){
+/* ════════════════════════════════════════════════════════════
+   BALANCED PROCEDURAL ARCHITECTURE GENERATOR
+   Creates 100% mathematically stable, symmetrical blueprints
+   ════════════════════════════════════════════════════════════ */
+function generateBalancedProceduralCastle(stage){
   const blocks=[];
-  const fortressBaseX = 0.58 + Math.random()*0.06;
-  const floors = 2 + (endlessStage % 3);
-  
-  // Base pillars
-  for(let fl=0; fl<floors; fl++){
-    const yBase = 0.88 - fl * 0.18;
-    const mat = fl===0 ? 'stone' : (fl===1 ? 'wood' : 'glass');
+  const fortressCX = Math.round(W * 0.68);
+  const archetype = (stage - 1) % 5;
+  const pillarW = 16, pillarH = 56, beamH = 14;
+
+  if(archetype === 0){
+    // ARCHETYPE 0: Twin Column Citadel (2 balanced vertical pillars + wide crossbeam + roof pig)
+    const span = 45;
+    const pL = fortressCX - span, pR = fortressCX + span;
+    const yPillar = groundY - pillarH/2;
+    blocks.push({x:pL, y:yPillar, w:pillarW, h:pillarH, m:'stone'});
+    blocks.push({x:pR, y:yPillar, w:pillarW, h:pillarH, m:'stone'});
     
-    // 2-3 vertical pillars
-    blocks.push({x:fortressBaseX-0.08, y:yBase, w:14, h:55, m:mat});
-    blocks.push({x:fortressBaseX+0.08, y:yBase, w:14, h:55, m:mat});
-    // Horizontal beam
-    blocks.push({x:fortressBaseX, y:yBase-0.1, w:130, h:12, m:mat});
-    // Pig in the middle of floor
-    blocks.push({x:fortressBaseX, y:yBase-0.02, t:'pig'});
+    // Bottom inner Pig
+    blocks.push({x:fortressCX, y:groundY - 14, t:'pig'});
+
+    // Heavy Beam
+    const yBeam1 = groundY - pillarH - beamH/2;
+    const beamW = (span * 2) + pillarW + 16;
+    blocks.push({x:fortressCX, y:yBeam1, w:beamW, h:beamH, m:'wood'});
+
+    // 2nd Tier Pillars
+    const yPillar2 = yBeam1 - beamH/2 - pillarH/2;
+    blocks.push({x:pL + 12, y:yPillar2, w:pillarW, h:pillarH, m:'wood'});
+    blocks.push({x:pR - 12, y:yPillar2, w:pillarW, h:pillarH, m:'wood'});
+    blocks.push({x:fortressCX, y:yBeam1 - beamH/2 - 14, t:'pig'});
+
+    // Top Beam & Pig
+    const yBeam2 = yPillar2 - pillarH/2 - beamH/2;
+    blocks.push({x:fortressCX, y:yBeam2, w:beamW - 24, h:beamH, m:'glass'});
+    blocks.push({x:fortressCX, y:yBeam2 - beamH/2 - 14, t:'pig'});
+
+  } else if(archetype === 1){
+    // ARCHETYPE 1: Pyramidal Step Ziggurat (Wide base 3 pillars, step down to 2, step to 1)
+    const span = 48;
+    const yPillar = groundY - pillarH/2;
+    blocks.push({x:fortressCX - span, y:yPillar, w:pillarW, h:pillarH, m:'stone'});
+    blocks.push({x:fortressCX, y:yPillar, w:pillarW, h:pillarH, m:'stone'});
+    blocks.push({x:fortressCX + span, y:yPillar, w:pillarW, h:pillarH, m:'stone'});
+    blocks.push({x:fortressCX - span/2, y:groundY - 14, t:'pig'});
+    blocks.push({x:fortressCX + span/2, y:groundY - 14, t:'pig'});
+
+    // Broad Foundation Slab
+    const yBeam = groundY - pillarH - beamH/2;
+    blocks.push({x:fortressCX, y:yBeam, w:span*2 + pillarW + 20, h:beamH, m:'stone'});
+
+    // Tier 2 Pillars
+    const yPillar2 = yBeam - beamH/2 - pillarH/2;
+    blocks.push({x:fortressCX - span/2, y:yPillar2, w:pillarW, h:pillarH, m:'wood'});
+    blocks.push({x:fortressCX + span/2, y:yPillar2, w:pillarW, h:pillarH, m:'wood'});
+    blocks.push({x:fortressCX, y:yBeam - beamH/2 - 14, t:'pig'});
+
+    // Tier 2 Roof
+    const yBeam2 = yPillar2 - pillarH/2 - beamH/2;
+    blocks.push({x:fortressCX, y:yBeam2, w:span + pillarW + 20, h:beamH, m:'wood'});
+    blocks.push({x:fortressCX, y:yBeam2 - beamH/2 - 14, t:'pig'});
+
+  } else if(archetype === 2){
+    // ARCHETYPE 2: Twin Symmetrical Bastions
+    [-65, 65].forEach(offset => {
+      const bx = fortressCX + offset;
+      const yPillar = groundY - pillarH/2;
+      blocks.push({x:bx - 18, y:yPillar, w:pillarW, h:pillarH, m:'stone'});
+      blocks.push({x:bx + 18, y:yPillar, w:pillarW, h:pillarH, m:'stone'});
+      blocks.push({x:bx, y:groundY - 14, t:'pig'});
+
+      const yBeam = groundY - pillarH - beamH/2;
+      blocks.push({x:bx, y:yBeam, w:64, h:beamH, m:'wood'});
+      blocks.push({x:bx, y:yBeam - beamH/2 - 14, t:'pig'});
+    });
+    // Sky Bridge between bastions
+    blocks.push({x:fortressCX, y:groundY - pillarH - beamH/2, w:70, h:10, m:'glass'});
+
+  } else if(archetype === 3){
+    // ARCHETYPE 3: Heavy Stone Vault Bunker
+    const wBunker = 110;
+    const yPillar = groundY - pillarH/2;
+    blocks.push({x:fortressCX - wBunker/2, y:yPillar, w:pillarW+4, h:pillarH, m:'stone'});
+    blocks.push({x:fortressCX + wBunker/2, y:yPillar, w:pillarW+4, h:pillarH, m:'stone'});
+    blocks.push({x:fortressCX, y:groundY - 14, t:'pig'});
+    blocks.push({x:fortressCX - 24, y:groundY - 14, t:'pig'});
+    blocks.push({x:fortressCX + 24, y:groundY - 14, t:'pig'});
+
+    const yBeam = groundY - pillarH - beamH/2;
+    blocks.push({x:fortressCX, y:yBeam, w:wBunker + pillarW + 16, h:beamH+4, m:'stone'});
+
+    // Glass crown turret
+    const yPillar2 = yBeam - beamH/2 - (pillarH*0.75)/2;
+    blocks.push({x:fortressCX - 22, y:yPillar2, w:pillarW, h:pillarH*0.75, m:'glass'});
+    blocks.push({x:fortressCX + 22, y:yPillar2, w:pillarW, h:pillarH*0.75, m:'glass'});
+    blocks.push({x:fortressCX, y:yBeam - beamH/2 - 14, t:'pig'});
+
+    const yBeam2 = yPillar2 - (pillarH*0.75)/2 - beamH/2;
+    blocks.push({x:fortressCX, y:yBeam2, w:70, h:beamH, m:'wood'});
+
+  } else {
+    // ARCHETYPE 4: Highrise Tower with Cross-Braced Lintels
+    const span = 36;
+    for(let fl=0; fl<3; fl++){
+      const yPillar = groundY - fl*(pillarH + beamH) - pillarH/2;
+      const mat = fl === 0 ? 'stone' : (fl === 1 ? 'wood' : 'glass');
+      blocks.push({x:fortressCX - span, y:yPillar, w:pillarW, h:pillarH, m:mat});
+      blocks.push({x:fortressCX + span, y:yPillar, w:pillarW, h:pillarH, m:mat});
+      blocks.push({x:fortressCX, y:groundY - fl*(pillarH + beamH) - 14, t:'pig'});
+
+      const yBeam = groundY - fl*(pillarH + beamH) - pillarH - beamH/2;
+      blocks.push({x:fortressCX, y:yBeam, w:span*2 + pillarW + 12, h:beamH, m:mat});
+    }
+    // Top pig
+    blocks.push({x:fortressCX, y:groundY - 3*(pillarH + beamH) - 14, t:'pig'});
   }
 
-  // Top pig
-  blocks.push({x:fortressBaseX, y:0.88 - floors*0.18 - 0.05, t:'pig'});
-
   return {
-    birds:['r','b','k','r','k'],
+    birds: ['r', 'b', 'k', 'r', 'k'],
     blocks
   };
 }
 
 const STATIC_LEVELS=[
-  {birds:['r','r','b','k'], blocks:[
-    {x:.65,y:.88,w:14,h:60,m:'wood'},{x:.77,y:.88,w:14,h:60,m:'wood'},
-    {x:.71,y:.72,w:120,h:12,m:'wood'},{x:.71,y:.85,t:'pig'},
-    {x:.71,y:.62,w:14,h:50,m:'glass'},{x:.71,y:.50,t:'pig'}
-  ]},
-  {birds:['r','b','k','r'], blocks:[
-    {x:.58,y:.88,w:14,h:60,m:'stone'},{x:.70,y:.88,w:14,h:60,m:'stone'},
-    {x:.64,y:.72,w:120,h:12,m:'stone'},{x:.64,y:.85,t:'pig'},
-    {x:.80,y:.88,w:14,h:60,m:'wood'},{x:.92,y:.88,w:14,h:60,m:'wood'},
-    {x:.86,y:.72,w:120,h:12,m:'wood'},{x:.86,y:.85,t:'pig'}
-  ]},
-  {birds:['k','b','r','k','b'], blocks:[
-    {x:.60,y:.88,w:14,h:60,m:'stone'},{x:.72,y:.88,w:14,h:60,m:'stone'},{x:.84,y:.88,w:14,h:60,m:'stone'},
-    {x:.72,y:.72,w:220,h:12,m:'stone'},{x:.66,y:.85,t:'pig'},{x:.78,y:.85,t:'pig'},
-    {x:.66,y:.58,w:14,h:55,m:'wood'},{x:.78,y:.58,w:14,h:55,m:'wood'},
-    {x:.72,y:.44,w:140,h:12,m:'glass'},{x:.72,y:.35,t:'pig'}
-  ]}
+  {
+    birds:['r','r','b','k'],
+    blocks:[
+      {x:520, y:300, w:16, h:60, m:'wood'}, {x:600, y:300, w:16, h:60, m:'wood'},
+      {x:560, y:262, w:110, h:14, m:'wood'}, {x:560, y:314, t:'pig'},
+      {x:560, y:224, w:16, h:54, m:'glass'}, {x:560, y:186, t:'pig'}
+    ]
+  },
+  {
+    birds:['r','b','k','r'],
+    blocks:[
+      {x:470, y:300, w:16, h:60, m:'stone'}, {x:550, y:300, w:16, h:60, m:'stone'},
+      {x:510, y:262, w:110, h:14, m:'stone'}, {x:510, y:314, t:'pig'},
+      {x:630, y:300, w:16, h:60, m:'wood'}, {x:710, y:300, w:16, h:60, m:'wood'},
+      {x:670, y:262, w:110, h:14, m:'wood'}, {x:670, y:314, t:'pig'}
+    ]
+  },
+  {
+    birds:['k','b','r','k','b'],
+    blocks:[
+      {x:480, y:300, w:16, h:60, m:'stone'}, {x:570, y:300, w:16, h:60, m:'stone'}, {x:660, y:300, w:16, h:60, m:'stone'},
+      {x:570, y:262, w:210, h:14, m:'stone'}, {x:525, y:314, t:'pig'}, {x:615, y:314, t:'pig'},
+      {x:525, y:224, w:16, h:54, m:'wood'}, {x:615, y:224, w:16, h:54, m:'wood'},
+      {x:570, y:188, w:120, h:14, m:'glass'}, {x:570, y:150, t:'pig'}
+    ]
+  }
 ];
 
 function setupWorld(){
@@ -209,25 +368,30 @@ function setupWorld(){
   levelReadyTime=Date.now();
 
   // Solid static ground and boundaries
-  const G = Bodies.rectangle(W/2, H - 10, W * 2, 28, {isStatic:true, label:'gnd', friction:0.8, restitution:0.1});
+  const G = Bodies.rectangle(W/2, groundY + 12, W * 2, 24, {
+    isStatic:true, label:'gnd', friction:1.0, restitution:0.0
+  });
   const LW = Bodies.rectangle(-20, H/2, 40, H * 3, {isStatic:true});
   const RW = Bodies.rectangle(W + 20, H/2, 40, H * 3, {isStatic:true});
   World.add(world, [G, LW, RW]);
 
-  const lvlData = isEndless ? generateProceduralCastle() : STATIC_LEVELS[currentLevel % STATIC_LEVELS.length];
+  const lvlData = isEndless ? generateBalancedProceduralCastle(endlessStage) : STATIC_LEVELS[currentLevel % STATIC_LEVELS.length];
   birdQueue = [...lvlData.birds];
   currentBirdIndex = 0;
 
-  // Build castle
+  // Build castle with exact pixel alignments
   lvlData.blocks.forEach(b => {
-    const bx = b.x * W, by = b.y * H;
     let body;
     if(b.t === 'pig'){
-      body = Bodies.circle(bx, by, 14, {restitution:0.2, friction:0.6, label:'pig'});
+      body = Bodies.circle(b.x, b.y, 14, {
+        restitution:0.1, friction:0.8, density:0.002, label:'pig'
+      });
       bodyData.set(body.id, {hp:2, maxHp:2, isPig:true});
     } else {
       const m = MATS[b.m];
-      body = Bodies.rectangle(bx, by, b.w, b.h, {restitution:0.15, friction:0.6, density:m.density, label:'block'});
+      body = Bodies.rectangle(b.x, b.y, b.w, b.h, {
+        restitution:m.restitution, friction:m.friction, density:m.density, label:'block'
+      });
       bodyData.set(body.id, {hp:m.hp, maxHp:m.hp, material:b.m, isPig:false});
     }
     World.add(world, body);
@@ -273,7 +437,7 @@ function launchBird(){
   const vy = (slY - dragY) * 0.22;
   
   bird = Bodies.circle(dragX, dragY, 13, {
-    restitution:0.4, friction:0.5, density:0.0035, label:'bird'
+    restitution:0.35, friction:0.6, density:0.004, label:'bird'
   });
   bodyData.set(bird.id, {hp:99, isBird:true});
   World.add(world, bird);
@@ -286,7 +450,7 @@ function launchBird(){
     if(updatePigCount() > 0 && currentBirdIndex < birdQueue.length){
       prepareNextBird();
     } else {
-      setTimeout(checkLevelEnd, 1500);
+      setTimeout(checkLevelEnd, 1600);
     }
   }, 3200);
 }
@@ -299,15 +463,17 @@ function triggerBirdSpecial(){
     // Blue bird: Triple Split
     const pos = bird.position;
     const v = bird.velocity;
-    const b1 = Bodies.circle(pos.x, pos.y-10, 10, {restitution:0.4, density:0.0035, label:'bird'});
-    const b2 = Bodies.circle(pos.x, pos.y+10, 10, {restitution:0.4, density:0.0035, label:'bird'});
+    const b1 = Bodies.circle(pos.x, pos.y-12, 10, {restitution:0.35, density:0.0035, label:'bird'});
+    const b2 = Bodies.circle(pos.x, pos.y+12, 10, {restitution:0.35, density:0.0035, label:'bird'});
+    bodyData.set(b1.id, {hp:99, isBird:true});
+    bodyData.set(b2.id, {hp:99, isBird:true});
     World.add(world, [b1, b2]);
-    Body.setVelocity(b1, {x:v.x, y:v.y-3});
-    Body.setVelocity(b2, {x:v.x, y:v.y+3});
+    Body.setVelocity(b1, {x:v.x, y:v.y-3.2});
+    Body.setVelocity(b2, {x:v.x, y:v.y+3.2});
   } else if(birdType === 'k'){
     // Black bird: Bomb blast
     const pos = bird.position;
-    spawnExplosion(pos.x, pos.y, 90);
+    spawnExplosion(pos.x, pos.y, 95);
   }
 }
 
@@ -316,11 +482,11 @@ function spawnExplosion(x, y, radius){
   Composite.allBodies(world).forEach(b => {
     const dist = Math.hypot(b.position.x - x, b.position.y - y);
     if(dist < radius && !b.isStatic){
-      const force = (radius - dist) / radius * 0.08;
+      const force = (radius - dist) / radius * 0.09;
       const angle = Math.atan2(b.position.y - y, b.position.x - x);
       Body.applyForce(b, b.position, {x:Math.cos(angle)*force, y:Math.sin(angle)*force});
       const d = bodyData.get(b.id);
-      if(d){ d.hp -= 3; if(d.hp <= 0) setTimeout(()=>destroyBody(b,d), 20); }
+      if(d){ d.hp -= 4; if(d.hp <= 0) setTimeout(()=>destroyBody(b,d), 20); }
     }
   });
 }
@@ -332,10 +498,10 @@ function destroyBody(body, data){
   const pos = body.position;
   if(data.isPig){
     totalScore += 500;
-    spawnFx(pos.x, pos.y, '#00ff88', 16);
+    spawnFx(pos.x, pos.y, '#00ff88', 18);
   } else {
     totalScore += 100;
-    spawnFx(pos.x, pos.y, MATS[data.material]?.fill || '#aaa', 6);
+    spawnFx(pos.x, pos.y, MATS[data.material]?.fill || '#aaa', 8);
   }
   document.getElementById('scoreEl').textContent = totalScore;
   updatePigCount();
@@ -346,7 +512,7 @@ function spawnFx(x, y, col, count){
   for(let i=0; i<count; i++){
     particles.push({
       x, y,
-      vx:(Math.random()-0.5)*7, vy:(Math.random()-0.5)*7,
+      vx:(Math.random()-0.5)*8, vy:(Math.random()-0.5)*8,
       alpha:1, col
     });
   }
@@ -455,13 +621,13 @@ function draw(){
   ctx.fill();
 
   // Solid Ground
-  ctx.fillStyle='#1c1f2e'; ctx.fillRect(0, H-22, W, 22);
+  ctx.fillStyle='#1c1f2e'; ctx.fillRect(0, groundY, W, H - groundY);
   ctx.strokeStyle='#ff6600'; ctx.lineWidth=2;
-  ctx.beginPath(); ctx.moveTo(0, H-22); ctx.lineTo(W, H-22); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(W, groundY); ctx.stroke();
 
   // Draw Slingshot base
   ctx.fillStyle='#8B4513';
-  ctx.fillRect(slX-5, slY, 10, H - 22 - slY);
+  ctx.fillRect(slX-5, slY, 10, groundY - slY);
   ctx.fillRect(slX-16, slY-18, 8, 22);
   ctx.fillRect(slX+8, slY-18, 8, 22);
 
@@ -475,10 +641,10 @@ function draw(){
 
     // Trajectory dots
     if(dragging){
-      ctx.fillStyle='rgba(255,255,255,0.4)';
+      ctx.fillStyle='rgba(255,255,255,0.45)';
       const vx = (slX - dragX) * 0.22;
       const vy = (slY - dragY) * 0.22;
-      let tx = bx, ty = by, g = 1.8 * 0.05;
+      let tx = bx, ty = by, g = 1.6 * 0.05;
       for(let i=0; i<18; i++){
         tx += vx * 1.5;
         ty += vy * 1.5 + (g * i * i);

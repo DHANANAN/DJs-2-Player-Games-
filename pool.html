@@ -4,6 +4,46 @@
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no"/>
 <title>8-Ball Pool — DJ's Games Hub</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style id="dj-global-theme-style">
+/* ── GLOBAL THEME OVERRIDES ── */
+html.theme-gold, body.theme-gold {
+  --bg: #0c0a04 !important;
+  --cyan: #ffd700 !important;
+  --magenta: #e6a100 !important;
+  --gold: #ffe066 !important;
+  --green: #c4a000 !important;
+  --border: rgba(255, 215, 0, 0.28) !important;
+  --panel: rgba(255, 215, 0, 0.05) !important;
+  --text: #ffebb3 !important;
+  --dim: #8a7343 !important;
+  background-color: #0c0a04 !important;
+  background-image: linear-gradient(rgba(255, 215, 0, 0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 215, 0, 0.04) 1px, transparent 1px) !important;
+  background-size: 28px 28px !important;
+}
+html.theme-retro, body.theme-retro {
+  --bg: #020b05 !important;
+  --cyan: #39ff14 !important;
+  --magenta: #ffaa00 !important;
+  --gold: #39ff14 !important;
+  --green: #39ff14 !important;
+  --border: rgba(57, 255, 20, 0.28) !important;
+  --panel: rgba(57, 255, 20, 0.06) !important;
+  --text: #b3ffd9 !important;
+  --dim: #326943 !important;
+  background-color: #020b05 !important;
+}
+html.theme-retro body::after {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 10000;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  background-size: 100% 3px, 6px 100%;
+}
+</style>
+<script>
+(function(){
+  const t = localStorage.getItem('djhub_theme') || 'neon';
+  document.documentElement.className = 'theme-' + t;
+})();
+</script>
 <style>
 :root{--bg:#04040d;--cyan:#00f5ff;--magenta:#ff00aa;--gold:#ffd700;--green:#00ff88;
   --panel:rgba(0,245,255,.04);--border:rgba(0,245,255,.18);--text:#c8d8ff;--dim:#5a6a8a;}
@@ -38,6 +78,9 @@ body::before{content:'';position:fixed;inset:0;z-index:999;
 .player-name{font-family:'Orbitron',sans-serif;font-size:.65rem;font-weight:700;}
 .p1-name{color:var(--cyan);}
 .p2-name{color:var(--magenta);}
+.group-badge{font-size:.7rem;padding:.15rem .5rem;border-radius:4px;border:1px solid;font-family:'Orbitron',sans-serif;}
+.group-solid{color:#ffaa00;border-color:#ffaa00;background:rgba(255,170,0,.1);}
+.group-stripe{color:#00f5ff;border-color:#00f5ff;background:rgba(0,245,255,.1);}
 .turn-label{font-family:'Press Start 2P',monospace;font-size:.55rem;color:var(--gold);text-align:center;}
 .msg-bar{font-family:'Orbitron',sans-serif;font-size:.55rem;color:var(--dim);letter-spacing:.08em;text-align:center;}
 
@@ -75,14 +118,14 @@ canvas{display:block;width:100%;touch-action:none;}
 <div class="hud">
   <div class="hud-player">
     <span class="player-name p1-name" id="p1Name">P1 (You)</span>
-    <span id="p1Group" style="font-size:0.75rem;color:var(--cyan)">Any</span>
+    <span id="p1Group" class="group-badge">Open Table</span>
   </div>
   <div>
     <div class="turn-label" id="turnlbl">YOUR SHOT</div>
     <div class="msg-bar" id="msgbar">Drag cue ball backwards to aim &amp; power</div>
   </div>
   <div class="hud-player">
-    <span id="p2Group" style="font-size:0.75rem;color:var(--magenta)">Any</span>
+    <span id="p2Group" class="group-badge">Open Table</span>
     <span class="player-name p2-name" id="p2Name">FAI Bot</span>
   </div>
 </div>
@@ -91,12 +134,14 @@ canvas{display:block;width:100%;touch-action:none;}
   <canvas id="c" height="440"></canvas>
   <div class="ov" id="ov">
     <div class="ot">8-BALL POOL</div>
-    <div class="os">Touch &amp; Drag from the white cue ball to aim and set power.<br>Sink all your balls then the 8-ball to win!</div>
+    <div class="os">Standard 8-Ball Rules · Solids (1-7) vs Stripes (9-15)<br>
+      Sink your group first, then the 8-Ball to win!<br>
+      Ball in hand on scratch · Touch &amp; Drag Aiming</div>
     <button class="ob" onclick="startGame()">RACK 'EM UP</button>
   </div>
 </div>
 
-<p class="hint">🖱️ Click/Drag or 📱 Touch &amp; Drag backwards from the cue ball to aim. Longer line = stronger shot!</p>
+<p class="hint">🖱️ Click/Drag or 📱 Touch &amp; Drag backwards from the cue ball to aim. When scratch occurs, tap to place the cue ball!</p>
 
 <script>
 const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
@@ -105,7 +150,7 @@ let W, H;
 const BR=10; // ball radius
 const FRICTION=0.988;
 const MIN_SPEED=0.06;
-const POCKET_R=17;
+const POCKET_R=18;
 
 const BALL_COLORS={
   1:'#f5d000',2:'#1a6be0',3:'#e03030',4:'#7b3aa0',5:'#e07820',
@@ -116,7 +161,15 @@ const BALL_COLORS={
 
 let balls=[], cue=null, pockets=[];
 let dragging=false, dragStart={x:0,y:0}, mousePos={x:0,y:0};
-let gameState={turn:0, assigned:[-1,-1], sunk:[], winner:null, moving:false};
+let gameState={
+  turn:0, // 0 = P1, 1 = P2
+  assigned:['open','open'], // 'solid' | 'stripe' | 'open'
+  sunkThisShot:[],
+  scratch:false,
+  ballInHand:false,
+  moving:false,
+  firstTouch:null
+};
 let animId=null, running=false;
 let mode='fai'; // 'fai', 'hai', '2p'
 let TL, TR, TT, TB;
@@ -141,6 +194,7 @@ function initGame(){
   balls.push(cue);
 
   const rx=TL+tw*0.68, ry=TT+th/2;
+  // Standard 8-ball pyramid triangle layout
   const order=[1,9,2,10,8,3,11,4,12,5,13,6,14,7,15];
   let idx=0;
   for(let row=0; row<5; row++){
@@ -156,11 +210,19 @@ function initGame(){
     }
   }
 
-  gameState={turn:0, assigned:[-1,-1], sunk:[], winner:null, moving:false};
+  gameState={
+    turn:0,
+    assigned:['open','open'],
+    sunkThisShot:[],
+    scratch:false,
+    ballInHand:false,
+    moving:false,
+    firstTouch:null
+  };
   updateTurnUI();
 }
 
-// ── Touch & Mouse Aiming ──
+// ── Touch & Mouse Aiming & Ball In Hand ──
 canvas.addEventListener('mousedown', handleAimStart);
 canvas.addEventListener('touchstart', e=>{
   if(e.touches[0]) handleAimStart(e.touches[0]);
@@ -180,6 +242,17 @@ function handleAimStart(e){
   const r=canvas.getBoundingClientRect();
   const mx=(e.clientX-r.left)*(W/r.width);
   const my=(e.clientY-r.top)*(H/r.height);
+
+  if(gameState.ballInHand){
+    // Place cue ball on kitchen side
+    if(mx > TL+BR && mx < TL+(TR-TL)*0.35 && my > TT+BR && my < TB-BR){
+      cue.x=mx; cue.y=my; cue.alive=true; cue.vx=0; cue.vy=0;
+      gameState.ballInHand=false;
+      gameState.scratch=false;
+      updateTurnUI();
+    }
+    return;
+  }
 
   if(Math.hypot(mx-cue.x, my-cue.y) < 45){
     dragging=true;
@@ -201,25 +274,39 @@ function handleAimEnd(){
   const dx=cue.x - mousePos.x;
   const dy=cue.y - mousePos.y;
   const dist=Math.hypot(dx,dy);
-  if(dist > 8){
-    const power = Math.min(dist * 0.16, 16);
+  if(dist > 6){
+    const power = Math.min(dist * 0.16, 16.5);
     cue.vx = (dx / dist) * power;
     cue.vy = (dy / dist) * power;
     gameState.moving=true;
+    gameState.sunkThisShot=[];
+    gameState.scratch=false;
+    gameState.firstTouch=null;
   }
 }
 
 function triggerAIShot(){
-  if(!running || gameState.moving) return;
+  if(!running || gameState.moving || gameState.ballInHand) return;
   setTimeout(()=>{
-    const targetBalls = balls.filter(b=>b.alive && b.id!==0 && b.id!==8);
-    const target = targetBalls.length > 0 ? targetBalls[Math.floor(Math.random()*targetBalls.length)] : balls.find(b=>b.id===8);
-    if(!target) return;
+    const aiGroup = gameState.assigned[1];
+    let eligibleBalls = balls.filter(b=>b.alive && b.id!==0);
+    
+    if(aiGroup === 'solid') eligibleBalls = eligibleBalls.filter(b=>b.id>=1 && b.id<=7);
+    else if(aiGroup === 'stripe') eligibleBalls = eligibleBalls.filter(b=>b.id>=9 && b.id<=15);
+    else eligibleBalls = eligibleBalls.filter(b=>b.id!==8);
+
+    // If own balls cleared, target 8-ball
+    if(eligibleBalls.length === 0){
+      eligibleBalls = balls.filter(b=>b.alive && b.id===8);
+    }
+    if(eligibleBalls.length === 0) return;
+
+    const target = eligibleBalls[Math.floor(Math.random()*eligibleBalls.length)];
 
     if(mode==='fai'){
-      // FAI: Friendly AI with casual aim
-      const angle = Math.atan2(target.y - cue.y, target.x - cue.x) + (Math.random()-0.5)*0.35;
-      const power = 5 + Math.random()*5;
+      // FAI: Friendly AI with wider spread
+      const angle = Math.atan2(target.y - cue.y, target.x - cue.x) + (Math.random()-0.5)*0.32;
+      const power = 5.5 + Math.random()*5;
       cue.vx = Math.cos(angle)*power;
       cue.vy = Math.sin(angle)*power;
     } else {
@@ -229,11 +316,15 @@ function triggerAIShot(){
       const ghostX = target.x - Math.cos(targetToPocket)*BR*2;
       const ghostY = target.y - Math.sin(targetToPocket)*BR*2;
       const cueAngle = Math.atan2(ghostY - cue.y, ghostX - cue.x);
-      const power = 8 + Math.random()*4;
+      const power = 8.5 + Math.random()*4;
       cue.vx = Math.cos(cueAngle)*power;
       cue.vy = Math.sin(cueAngle)*power;
     }
+
     gameState.moving=true;
+    gameState.sunkThisShot=[];
+    gameState.scratch=false;
+    gameState.firstTouch=null;
   }, 900);
 }
 
@@ -254,7 +345,7 @@ function update(){
     if(b.y - b.r < TT){ b.y = TT + b.r; b.vy = Math.abs(b.vy)*0.85; }
     if(b.y + b.r > TB){ b.y = TB - b.r; b.vy = -Math.abs(b.vy)*0.85; }
 
-    // Pocket checks
+    // Pocket suction & sinking
     pockets.forEach(p=>{
       if(Math.hypot(b.x - p.x, b.y - p.y) < POCKET_R){
         b.alive=false; b.vx=0; b.vy=0;
@@ -271,6 +362,10 @@ function update(){
       const dx=b2.x-b1.x, dy=b2.y-b1.y;
       const dist=Math.hypot(dx,dy);
       if(dist < b1.r + b2.r && dist > 0){
+        // Track first touched ball by cue
+        if(b1.id===0 && !gameState.firstTouch) gameState.firstTouch=b2;
+        if(b2.id===0 && !gameState.firstTouch) gameState.firstTouch=b1;
+
         const nx=dx/dist, ny=dy/dist;
         const overlap=b1.r + b2.r - dist;
         b1.x -= nx*overlap*0.5; b1.y -= ny*overlap*0.5;
@@ -286,29 +381,76 @@ function update(){
     }
   }
 
-  // Turn transition when motion stops
+  // Turn resolution when all balls halt
   if(gameState.moving && !anyMoving){
     gameState.moving=false;
-    // Cue scratch check
-    if(!cue.alive){
-      cue.alive=true;
-      cue.x = TL + (TR-TL)*0.25; cue.y = TT + (TB-TT)/2;
-      cue.vx=0; cue.vy=0;
-    }
-    // Switch turn
-    gameState.turn = gameState.turn===0 ? 1 : 0;
-    updateTurnUI();
-    if(gameState.turn===1 && mode!=='2p'){
-      triggerAIShot();
-    }
+    resolveTurn();
   }
 }
 
 function onBallSunk(b){
-  if(b.id===8){
-    // 8-ball sunk -> end game
-    const winner = gameState.turn;
-    endGame(winner);
+  if(b.id===0){
+    gameState.scratch=true;
+  } else {
+    gameState.sunkThisShot.push(b);
+  }
+}
+
+function resolveTurn(){
+  const currPlayer = gameState.turn;
+  const oppPlayer = 1 - currPlayer;
+
+  // 1. Check 8-Ball sinking
+  const eightSunk = gameState.sunkThisShot.find(b=>b.id===8);
+  if(eightSunk){
+    const ownGroup = gameState.assigned[currPlayer];
+    const ownRemaining = balls.filter(b=>b.alive && b.id!==0 && b.id!==8 && (ownGroup==='solid'?b.id<=7:b.id>=9)).length;
+    if(ownRemaining === 0 && !gameState.scratch){
+      // Legal 8-Ball win!
+      endGame(currPlayer);
+    } else {
+      // Early 8-ball sink or scratch on 8-ball = loss!
+      endGame(oppPlayer);
+    }
+    return;
+  }
+
+  // 2. Assign groups on open table
+  if(gameState.assigned[0] === 'open' && gameState.sunkThisShot.length > 0 && !gameState.scratch){
+    const firstNumbered = gameState.sunkThisShot.find(b=>b.id!==0 && b.id!==8);
+    if(firstNumbered){
+      const isSolid = firstNumbered.id <= 7;
+      gameState.assigned[currPlayer] = isSolid ? 'solid' : 'stripe';
+      gameState.assigned[oppPlayer] = isSolid ? 'stripe' : 'solid';
+    }
+  }
+
+  // 3. Check if scratch occurred
+  if(gameState.scratch){
+    cue.alive=true;
+    cue.vx=0; cue.vy=0;
+    cue.x = TL + (TR-TL)*0.25; cue.y = TT + (TB-TT)/2;
+    gameState.ballInHand = true;
+    gameState.turn = oppPlayer; // switch turn on scratch
+  } else {
+    // 4. Continue turn if player sank own ball legally
+    const ownGroup = gameState.assigned[currPlayer];
+    let continueTurn = false;
+    if(ownGroup === 'open' && gameState.sunkThisShot.length > 0){
+      continueTurn = true;
+    } else if(ownGroup !== 'open'){
+      const sankOwn = gameState.sunkThisShot.some(b=>ownGroup==='solid'?b.id<=7:b.id>=9);
+      if(sankOwn) continueTurn = true;
+    }
+
+    if(!continueTurn){
+      gameState.turn = oppPlayer;
+    }
+  }
+
+  updateTurnUI();
+  if(gameState.turn===1 && mode!=='2p' && !gameState.ballInHand){
+    triggerAIShot();
   }
 }
 
@@ -316,7 +458,21 @@ function updateTurnUI(){
   const isP1 = gameState.turn===0;
   document.getElementById('turnlbl').textContent = isP1 ? 'YOUR SHOT' : (mode==='2p'?'P2 SHOT':'BOT THINKING...');
   document.getElementById('turnlbl').style.color = isP1 ? 'var(--cyan)' : 'var(--magenta)';
-  document.getElementById('msgbar').textContent = isP1 ? 'Drag cue ball to shoot' : (mode==='2p'?'Player 2 aiming...':'AI calculating line...');
+  
+  const g1El = document.getElementById('p1Group');
+  const g2El = document.getElementById('p2Group');
+  g1El.textContent = gameState.assigned[0]==='solid'?'Solids (1-7)':(gameState.assigned[0]==='stripe'?'Stripes (9-15)':'Open Table');
+  g1El.className = 'group-badge ' + (gameState.assigned[0]==='solid'?'group-solid':(gameState.assigned[0]==='stripe'?'group-stripe':''));
+
+  g2El.textContent = gameState.assigned[1]==='solid'?'Solids (1-7)':(gameState.assigned[1]==='stripe'?'Stripes (9-15)':'Open Table');
+  g2El.className = 'group-badge ' + (gameState.assigned[1]==='solid'?'group-solid':(gameState.assigned[1]==='stripe'?'group-stripe':''));
+
+  const msgEl = document.getElementById('msgbar');
+  if(gameState.ballInHand){
+    msgEl.textContent = 'Ball in Hand! Tap kitchen area to place cue ball.';
+  } else {
+    msgEl.textContent = isP1 ? 'Drag cue ball to shoot' : (mode==='2p'?'Player 2 aiming...':'AI calculating pocket line...');
+  }
 }
 
 function draw(){
@@ -326,6 +482,15 @@ function draw(){
   // Table Felt
   ctx.fillStyle='#082e18';
   ctx.fillRect(TL, TT, TR-TL, TB-TT);
+
+  // Kitchen / Headstring Line
+  ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1.5;
+  ctx.setLineDash([4,4]);
+  ctx.beginPath();
+  ctx.moveTo(TL+(TR-TL)*0.25, TT);
+  ctx.lineTo(TL+(TR-TL)*0.25, TB);
+  ctx.stroke();
+  ctx.setLineDash([]);
 
   // Cushions
   ctx.strokeStyle='#145228'; ctx.lineWidth=8;
@@ -342,7 +507,7 @@ function draw(){
     ctx.strokeStyle='rgba(255,215,0,0.3)'; ctx.lineWidth=2; ctx.stroke();
   });
 
-  // Aiming Guide Line
+  // Aiming Guide Line & Cue Stick
   if(dragging && cue.alive){
     const dx = cue.x - mousePos.x;
     const dy = cue.y - mousePos.y;
@@ -352,7 +517,7 @@ function draw(){
       ctx.setLineDash([6, 6]);
       ctx.beginPath();
       ctx.moveTo(cue.x, cue.y);
-      ctx.lineTo(cue.x + (dx/dist)*160, cue.y + (dy/dist)*160);
+      ctx.lineTo(cue.x + (dx/dist)*170, cue.y + (dy/dist)*170);
       ctx.stroke();
       ctx.setLineDash([]);
 
@@ -372,6 +537,12 @@ function draw(){
     ctx.fillStyle=b.color;
     ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
     ctx.shadowBlur=0;
+
+    // Stripes white band
+    if(b.stripe){
+      ctx.fillStyle='#ffffff';
+      ctx.fillRect(b.x-b.r+2, b.y-4, (b.r-2)*2, 8);
+    }
 
     // Number circle
     if(b.id > 0){
@@ -404,8 +575,8 @@ function endGame(winner){
   const ov=document.getElementById('ov');
   ov.classList.remove('h');
   const youWon = winner===0;
-  ov.querySelector('.ot').textContent = youWon ? '🏆 YOU WON THE RACK!' : '🤖 OPPONENT SANK 8-BALL!';
-  ov.querySelector('.os').textContent = youWon ? 'Masterful billiards execution!' : 'Close match! Rack them up again.';
+  ov.querySelector('.ot').textContent = youWon ? '🏆 YOU WON THE RACK!' : '🤖 OPPONENT TOOK THE MATCH!';
+  ov.querySelector('.os').textContent = youWon ? 'Masterful 8-Ball pocket execution!' : 'Well fought match. Rack them up again!';
   ov.querySelector('.ob').textContent = 'RACK AGAIN';
 }
 
@@ -414,7 +585,6 @@ function setMode(m){
   document.getElementById('mFAI').classList.toggle('active',m==='fai');
   document.getElementById('mHAI').classList.toggle('active',m==='hai');
   document.getElementById('m2P').classList.toggle('active',m==='2p');
-  
   document.getElementById('p2Name').textContent = m==='fai' ? 'FAI Bot (Easy)' : (m==='hai'?'HAI Hustler':'Player 2');
 }
 

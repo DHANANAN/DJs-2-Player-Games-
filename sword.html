@@ -58,6 +58,19 @@ canvas{display:block;width:100%;}
 .cb p{font-size:.8rem;color:var(--dim);line-height:1.8;}
 .k{display:inline-block;font-family:'Orbitron',sans-serif;font-size:.5rem;
   padding:.1rem .35rem;border:1px solid var(--border);color:var(--text);background:rgba(255,255,255,.05);}
+.vpad-wrap{position:fixed;bottom:0;left:0;right:0;pointer-events:none;z-index:1000;
+  display:flex;justify-content:space-between;padding:0 .5rem .8rem;}
+.vpad,.vpad2{pointer-events:all;position:relative;width:160px;height:130px;}
+.vbtn{position:absolute;width:42px;height:42px;background:rgba(0,245,255,.1);
+  border:2px solid rgba(0,245,255,.3);color:#00f5ff;font-size:.9rem;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  touch-action:none;user-select:none;-webkit-user-select:none;}
+.vbtn:active,.vbtn.pressed{background:rgba(0,245,255,.4);}
+.vbtn.p2c{background:rgba(255,0,170,.1);border-color:rgba(255,0,170,.3);color:#ff00aa;}
+.vbtn.p2c:active,.vbtn.p2c.pressed{background:rgba(255,0,170,.4);}
+.vbtn.atk{background:rgba(255,50,50,.15);border-color:rgba(255,50,50,.5);color:#ff4455;font-size:.8rem;}
+.vbtn.atk:active,.vbtn.atk.pressed{background:rgba(255,50,50,.5);}
+@media(pointer:fine){.vpad-wrap{display:none!important;}}
 </style>
 </head>
 <body>
@@ -250,6 +263,34 @@ function startGame(){
   loop();
 }
 window.addEventListener('resize',()=>{resize();});
+function bindVpad(id,key){
+  const btn=document.getElementById(id);if(!btn)return;
+  btn.addEventListener('touchstart',e=>{e.preventDefault();keys[key]=true;btn.classList.add('pressed');},{passive:false});
+  btn.addEventListener('touchend',e=>{e.preventDefault();keys[key]=false;btn.classList.remove('pressed');},{passive:false});
+  btn.addEventListener('touchcancel',e=>{keys[key]=false;btn.classList.remove('pressed');},{passive:false});
+}
+document.body.insertAdjacentHTML('beforeend',`
+<div class="vpad-wrap">
+  <div class="vpad">
+    <button class="vbtn" style="left:0;top:44px;" id="v1l">&#9664;</button>
+    <button class="vbtn" style="left:48px;top:44px;" id="v1r">&#9654;</button>
+    <button class="vbtn" style="left:24px;top:2px;" id="v1up">Jump</button>
+    <button class="vbtn atk" style="right:0;top:10px;" id="v1atk">ATK</button>
+    <button class="vbtn atk" style="right:0;top:58px;" id="v1blk">BLK</button>
+  </div>
+  <div class="vpad2">
+    <button class="vbtn p2c" style="left:0;top:44px;" id="v2l">&#9664;</button>
+    <button class="vbtn p2c" style="left:48px;top:44px;" id="v2r">&#9654;</button>
+    <button class="vbtn p2c" style="left:24px;top:2px;" id="v2up">Jump</button>
+    <button class="vbtn atk" style="right:0;top:10px;" id="v2atk">ATK</button>
+    <button class="vbtn atk" style="right:0;top:58px;" id="v2blk">BLK</button>
+  </div>
+</div>`);
+bindVpad('v1l','a');bindVpad('v1r','d');bindVpad('v1up','w');
+bindVpad('v1atk','f');bindVpad('v1blk','g');
+bindVpad('v2l','ArrowLeft');bindVpad('v2r','ArrowRight');bindVpad('v2up','ArrowUp');
+bindVpad('v2atk','k');bindVpad('v2blk','l');
+try{screen.orientation?.lock('landscape').catch(()=>{});}catch(e){}
 </script>
 </body>
 </html>

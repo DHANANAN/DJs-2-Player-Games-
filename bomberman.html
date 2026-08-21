@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no"/>
+<meta name="description" content="Bomberman — 2-player bomb battle on a destructible grid. Plant bombs, collect power-ups, eliminate your opponent."/>
+<title>Bomberman — DJ's Games Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#04040d;--cyan:#00f5ff;--magenta:#ff00aa;--gold:#ffd700;--green:#00ff88;
+  --panel:rgba(0,245,255,.04);--border:rgba(0,245,255,.18);--text:#c8d8ff;--dim:#5a6a8a;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding:.7rem .5rem;overflow-x:hidden;touch-action:none;}
+body::before{content:'';position:fixed;inset:0;z-index:999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;}
+.nav{width:100%;max-width:640px;display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;}
+.back{font-family:'Orbitron',sans-serif;font-size:.6rem;font-weight:700;color:var(--dim);
+  text-decoration:none;border:1px solid var(--dim);padding:.4rem .8rem;letter-spacing:.1em;transition:all .3s;}
+.back:hover{color:var(--cyan);border-color:var(--cyan);}
+.title{font-family:'Press Start 2P',monospace;font-size:.8rem;color:var(--gold);
+  text-shadow:0 0 18px rgba(255,215,0,.6);}
+.hud{width:100%;max-width:640px;display:grid;grid-template-columns:1fr auto 1fr;gap:.5rem;margin-bottom:.5rem;}
+.p-hud{border:1px solid var(--border);background:var(--panel);padding:.4rem .8rem;}
+.p-name{font-family:'Orbitron',sans-serif;font-size:.5rem;letter-spacing:.12em;margin-bottom:.2rem;}
+.p-name.p1{color:var(--cyan);}
+.p-name.p2{color:var(--magenta);}
+.p-lives{font-size:1.1rem;letter-spacing:.2rem;}
+.p-power{font-family:'Orbitron',sans-serif;font-size:.42rem;color:var(--dim);}
+.mid-hud{border:1px solid var(--border);background:var(--panel);padding:.4rem .6rem;text-align:center;}
+.mid-val{font-family:'Orbitron',sans-serif;font-size:1.4rem;font-weight:900;color:var(--gold);}
+.mid-lbl{font-family:'Orbitron',sans-serif;font-size:.42rem;color:var(--dim);}
+.cw{position:relative;width:min(640px,98vw);border:1px solid var(--border);background:#010108;margin-bottom:.5rem;}
+.cw::before{content:'';position:absolute;inset:-2px;background:linear-gradient(90deg,var(--gold),var(--magenta),var(--cyan));z-index:-1;opacity:.4;}
+canvas{display:block;width:100%;}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,4,13,.92);z-index:20;}
+.ov.h{display:none;}
+.ot{font-family:'Press Start 2P',monospace;font-size:clamp(.85rem,4vw,1.4rem);color:var(--gold);text-shadow:0 0 28px rgba(255,215,0,.7);text-align:center;margin-bottom:.6rem;}
+.os{font-family:'Orbitron',sans-serif;font-size:.55rem;color:var(--dim);letter-spacing:.1em;margin-bottom:1.1rem;text-align:center;line-height:2;}
+.ob{font-family:'Orbitron',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.2em;
+  padding:.7rem 1.8rem;background:var(--gold);color:var(--bg);border:none;cursor:pointer;transition:all .25s;}
+.ob:hover{background:#fff;}
+
+/* Virtual D-pads */
+.vpad-wrap{position:fixed;bottom:0;left:0;right:0;pointer-events:none;z-index:1000;
+  display:flex;justify-content:space-between;padding:0 .5rem .8rem;}
+.vpad{pointer-events:all;position:relative;width:130px;height:130px;}
+.vbtn{position:absolute;width:44px;height:44px;background:rgba(0,245,255,.12);
+  border:2px solid rgba(0,245,255,.35);color:var(--cyan);font-size:1.1rem;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;touch-action:none;
+  user-select:none;-webkit-user-select:none;cursor:pointer;transition:background .1s;}
+.vbtn:active,.vbtn.pressed{background:rgba(0,245,255,.4);}
+.vup{top:0;left:43px;}
+.vdown{bottom:0;left:43px;}
+.vleft{left:0;top:43px;}
+.vright{right:0;top:43px;}
+.v-action{width:44px;height:44px;border-radius:50%;background:rgba(255,0,170,.12);
+  border:2px solid rgba(255,0,170,.4);color:var(--magenta);font-size:1rem;
+  display:flex;align-items:center;justify-content:center;touch-action:none;
+  user-select:none;-webkit-user-select:none;cursor:pointer;transition:background .1s;
+  position:absolute;}
+.v-action:active,.v-action.pressed{background:rgba(255,0,170,.4);}
+.vpad2{pointer-events:all;position:relative;width:180px;height:130px;}
+.vbomb1{bottom:10px;right:10px;}
+.vbomb2{bottom:10px;left:10px;}
+
+@media(pointer:fine){.vpad-wrap{display:none!important;}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a href="index.html" class="back">← Hub</a>
+  <span class="title">💣 Bomberman</span>
+  <span style="width:70px"></span>
+</nav>
+
+<div class="hud">
+  <div class="p-hud">
+    <div class="p-name p1">// PLAYER 1</div>
+    <div class="p-lives" id="lives1">❤❤❤</div>
+    <div class="p-power" id="pow1">💣×1 🔥×2 👟×3</div>
+  </div>
+  <div class="mid-hud">
+    <div class="mid-val" id="timerEl">3:00</div>
+    <div class="mid-lbl">Time</div>
+  </div>
+  <div class="p-hud" style="text-align:right">
+    <div class="p-name p2" style="text-align:right">PLAYER 2 //</div>
+    <div class="p-lives" id="lives2" style="text-align:right">❤❤❤</div>
+    <div class="p-power" id="pow2" style="text-align:right">💣×1 🔥×2 👟×3</div>
+  </div>
+</div>
+
+<div class="cw" id="cw">
+  <canvas id="c"></canvas>
+  <div class="ov" id="ov">
+    <div class="ot">💣 BOMBERMAN</div>
+    <div class="os">Plant bombs · Destroy walls · Eliminate opponent<br>
+      P1: WASD + F bomb&nbsp;&nbsp;&nbsp;P2: Arrows + L bomb<br>
+      Power-ups: 💣 More bombs · 🔥 Bigger blast · 👟 Speed</div>
+    <button class="ob" onclick="startGame()">START BATTLE</button>
+  </div>
+</div>
+
+<!-- Virtual D-pads (mobile only) -->
+<div class="vpad-wrap" id="vpadWrap">
+  <div class="vpad" id="vpad1">
+    <button class="vbtn vup" id="v1u">▲</button>
+    <button class="vbtn vleft" id="v1l">◀</button>
+    <button class="vbtn vright" id="v1r">▶</button>
+    <button class="vbtn vdown" id="v1d">▼</button>
+    <button class="v-action vbomb1" id="v1b">💣</button>
+  </div>
+  <div class="vpad2" id="vpad2">
+    <button class="v-action vbomb2" id="v2b">💣</button>
+    <button class="vbtn vup" style="top:0;right:43px;position:absolute;" id="v2u">▲</button>
+    <button class="vbtn vleft" style="left:45px;top:43px;position:absolute;" id="v2l">◀</button>
+    <button class="vbtn vright" style="right:0;top:43px;position:absolute;" id="v2r">▶</button>
+    <button class="vbtn vdown" style="bottom:0;right:43px;position:absolute;" id="v2d">▼</button>
+  </div>
+</div>
+
+<script>
+// ─── BOMBERMAN ENGINE ─────────────────────────────────
+const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
+const COLS=13, ROWS=11, CELL=40;
+let W,H;
+
+canvas.width=COLS*CELL; canvas.height=ROWS*CELL;
+document.getElementById('cw').style.width=(COLS*CELL)+'px';
+W=canvas.width; H=canvas.height;
+
+const keys={};
+
+// Grid: 0=empty, 1=solid wall, 2=destructible block
+// Power-ups: 3=bomb+, 4=flame+, 5=speed+
+let grid, players, bombs=[], explosions=[], powerups=[];
+let running=false, animId=null, gameTimer=180*60, timerInterval=null;
+
+const P1_KEYS={up:'w',down:'s',left:'a',right:'d',bomb:'f'};
+const P2_KEYS={up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight',bomb:'l'};
+
+function initGrid(){
+  grid=[];
+  for(let r=0;r<ROWS;r++){
+    grid[r]=[];
+    for(let c=0;c<COLS;c++){
+      // Solid walls at even positions
+      if(r%2===1&&c%2===1){ grid[r][c]=1; continue; }
+      // Border walls
+      if(r===0||r===ROWS-1||c===0||c===COLS-1){ grid[r][c]=1; continue; }
+      // Corners free for players
+      const corner=(r<=1&&c<=1)||(r<=1&&c>=COLS-2)||(r>=ROWS-2&&c<=1)||(r>=ROWS-2&&c>=COLS-2);
+      grid[r][c]=corner?0:(Math.random()<0.6?2:0);
+    }
+  }
+}
+
+function mkPlayer(row,col,keys_,col1,col2,idx){
+  return{
+    row,col,
+    x:col*CELL,y:row*CELL,
+    px:col*CELL,py:row*CELL,
+    color:col1,glow:col2,
+    keys:keys_,
+    lives:3,
+    bombCount:1,bombsPlaced:0,
+    flameRange:2,
+    speed:2.5,
+    alive:true,
+    invincible:0,
+    idx,
+    moving:false,
+    dir:[0,0],
+    // For smooth movement
+    targetRow:row,targetCol:col,
+    moving2:false
+  };
+}
+
+function initPlayers(){
+  players=[
+    mkPlayer(1,1,P1_KEYS,'#00f5ff','rgba(0,245,255,.8)',0),
+    mkPlayer(ROWS-2,COLS-2,P2_KEYS,'#ff00aa','rgba(255,0,170,.8)',1)
+  ];
+}
+
+window.addEventListener('keydown',e=>{
+  keys[e.key]=true;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
+  if(e.key.length===1) keys[e.key.toLowerCase()]=true;
+});
+window.addEventListener('keyup',e=>{
+  keys[e.key]=false;
+  if(e.key.length===1) keys[e.key.toLowerCase()]=false;
+});
+
+// Cell pixel center
+function cellCenter(r,c){ return{x:c*CELL+CELL/2, y:r*CELL+CELL/2}; }
+
+let lastBomb=[false,false];
+function update(){
+  players.forEach((p,pi)=>{
+    if(!p.alive) return;
+    if(p.invincible>0) p.invincible--;
+
+    const k=p.keys;
+    let dx=0,dy=0;
+    if(keys[k.up]) dy=-1;
+    else if(keys[k.down]) dy=1;
+    else if(keys[k.left]) dx=-1;
+    else if(keys[k.right]) dx=1;
+
+    // Pixel-smooth movement
+    const speed=p.speed;
+    let nx=p.x+dx*speed, ny=p.y+dy*speed;
+
+    // Grid collision
+    function blocked(px,py){
+      const margin=4;
+      const r1=Math.floor((py+margin)/CELL), r2=Math.floor((py+CELL-margin-1)/CELL);
+      const c1=Math.floor((px+margin)/CELL), c2=Math.floor((px+CELL-margin-1)/CELL);
+      for(let r=r1;r<=r2;r++) for(let c=c1;c<=c2;c++){
+        if(r<0||r>=ROWS||c<0||c>=COLS) return true;
+        if(grid[r][c]===1||grid[r][c]===2) return true;
+        // Block movement through own bombs (but allow passing if just placed)
+        const bombHere=bombs.find(b=>b.row===r&&b.col===c&&!b.justPlaced);
+        if(bombHere) return true;
+      }
+      return false;
+    }
+
+    if(!blocked(nx,p.y)) p.x=nx;
+    if(!blocked(p.x,ny)) p.y=ny;
+
+    // Update grid position
+    p.row=Math.floor((p.y+CELL/2)/CELL);
+    p.col=Math.floor((p.x+CELL/2)/CELL);
+
+    // Bomb placement
+    const wantBomb=keys[k.bomb];
+    if(wantBomb&&!lastBomb[pi]&&p.bombsPlaced<p.bombCount){
+      placeBomb(p);
+    }
+    lastBomb[pi]=wantBomb;
+
+    // Power-up collection
+    powerups=powerups.filter(pu=>{
+      if(pu.row===p.row&&pu.col===p.col){
+        if(pu.type===3) p.bombCount=Math.min(p.bombCount+1,5);
+        if(pu.type===4) p.flameRange=Math.min(p.flameRange+1,6);
+        if(pu.type===5) p.speed=Math.min(p.speed+0.5,5);
+        updatePowerDisplay(p);
+        return false;
+      }
+      return true;
+    });
+
+    // Death from explosion
+    if(p.invincible<=0){
+      const hit=explosions.some(ex=>ex.cells.some(cell=>cell.r===p.row&&cell.c===p.col));
+      if(hit){
+        p.lives--;
+        p.invincible=120;
+        updateLives(p);
+        if(p.lives<=0){ p.alive=false; checkWin(); }
+      }
+    }
+  });
+
+  // Update bombs
+  bombs.forEach(b=>{
+    b.timer--;
+    if(b.justPlaced&&b.timer<160) b.justPlaced=false;
+    if(b.timer<=0) explodeBomb(b);
+  });
+  bombs=bombs.filter(b=>b.timer>0);
+
+  // Update explosions
+  explosions=explosions.filter(ex=>{ ex.timer--; return ex.timer>0; });
+}
+
+function placeBomb(p){
+  const row=p.row, col=p.col;
+  if(bombs.some(b=>b.row===row&&b.col===col)) return;
+  p.bombsPlaced++;
+  const b={row,col,timer:3*60,owner:p,range:p.flameRange,justPlaced:true};
+  bombs.push(b);
+  setTimeout(()=>{ if(b.timer>0) p.bombsPlaced=Math.max(0,p.bombsPlaced-1); },3100);
+}
+
+function explodeBomb(bomb){
+  bombs=bombs.filter(b=>b!==bomb);
+  bomb.owner.bombsPlaced=Math.max(0,bomb.owner.bombsPlaced-1);
+  const cells=[{r:bomb.row,c:bomb.col}];
+  [[0,-1],[0,1],[-1,0],[1,0]].forEach(([dr,dc])=>{
+    for(let i=1;i<=bomb.range;i++){
+      const r=bomb.row+dr*i, c=bomb.col+dc*i;
+      if(r<0||r>=ROWS||c<0||c>=COLS) break;
+      if(grid[r][c]===1) break;
+      cells.push({r,c});
+      if(grid[r][c]===2){
+        grid[r][c]=0;
+        // Maybe drop power-up
+        if(Math.random()<0.35){
+          const t=3+Math.floor(Math.random()*3);
+          powerups.push({row:r,col:c,type:t});
+        }
+        break;
+      }
+      // Chain bombs
+      const chainBomb=bombs.find(b=>b.row===r&&b.col===c);
+      if(chainBomb){ chainBomb.timer=1; }
+    }
+  });
+  explosions.push({cells,timer:40,maxTimer:40});
+}
+
+function checkWin(){
+  const alive=players.filter(p=>p.alive);
+  if(alive.length<=1){
+    running=false;
+    clearInterval(timerInterval);
+    setTimeout(()=>{
+      const ov=document.getElementById('ov');
+      ov.classList.remove('h');
+      ov.querySelector('.ot').textContent=alive.length===1?`🏆 P${alive[0].idx+1} WINS!`:'DRAW!';
+      ov.querySelector('.os').textContent=alive.length===1?'Opponent eliminated!':'Both players eliminated!';
+      ov.querySelector('.ob').textContent='Play Again';
+      ov.querySelector('.ob').onclick=startGame;
+    },800);
+  }
+}
+
+function updateLives(p){
+  const el=document.getElementById(`lives${p.idx+1}`);
+  el.textContent='❤'.repeat(Math.max(0,p.lives))+'🖤'.repeat(Math.max(0,3-p.lives));
+}
+function updatePowerDisplay(p){
+  const el=document.getElementById(`pow${p.idx+1}`);
+  el.textContent=`💣×${p.bombCount} 🔥×${p.flameRange} 👟×${p.speed.toFixed(1)}`;
+}
+
+// Drawing
+const COLORS={
+  1:'#1a1a2e',2:'#2d1b69',3:'#003344',4:'#2d0030',5:'#1a3300',
+};
+function draw(){
+  ctx.fillStyle='#010108';
+  ctx.fillRect(0,0,W,H);
+
+  // Grid
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const v=grid[r][c];
+    const x=c*CELL,y=r*CELL;
+    if(v===1){
+      // Solid wall
+      ctx.fillStyle='#1a1a2e';
+      ctx.fillRect(x,y,CELL,CELL);
+      ctx.fillStyle='rgba(0,245,255,.06)';
+      ctx.fillRect(x+2,y+2,CELL-4,CELL-4);
+      ctx.strokeStyle='rgba(0,245,255,.15)';
+      ctx.lineWidth=1;
+      ctx.strokeRect(x+.5,y+.5,CELL-1,CELL-1);
+    } else if(v===2){
+      // Destructible block
+      ctx.fillStyle='#2d1b3d';
+      ctx.fillRect(x,y,CELL,CELL);
+      // Brick pattern
+      ctx.fillStyle='rgba(255,0,170,.08)';
+      ctx.fillRect(x+2,y+2,CELL-4,CELL-4);
+      ctx.strokeStyle='rgba(255,0,170,.25)';
+      ctx.lineWidth=1;
+      ctx.strokeRect(x+.5,y+.5,CELL-1,CELL-1);
+      // Brick lines
+      ctx.strokeStyle='rgba(255,0,170,.12)';
+      ctx.beginPath();ctx.moveTo(x,y+CELL/2);ctx.lineTo(x+CELL,y+CELL/2);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(x+CELL/2,y);ctx.lineTo(x+CELL/2,y+CELL/2);ctx.stroke();
+    } else {
+      // Empty floor
+      ctx.fillStyle='rgba(0,245,255,.02)';
+      ctx.fillRect(x,y,CELL,CELL);
+    }
+    // Grid lines
+    ctx.strokeStyle='rgba(0,245,255,.04)';
+    ctx.lineWidth=.5;
+    ctx.strokeRect(x,y,CELL,CELL);
+  }
+
+  // Power-ups
+  powerups.forEach(pu=>{
+    const x=pu.col*CELL, y=pu.row*CELL;
+    const icons={3:'💣',4:'🔥',5:'👟'};
+    ctx.fillStyle='rgba(255,215,0,.15)';
+    ctx.fillRect(x+4,y+4,CELL-8,CELL-8);
+    ctx.font=`${CELL*.55}px serif`;
+    ctx.textAlign='center';
+    ctx.fillText(icons[pu.type]||'?',x+CELL/2,y+CELL*.72);
+  });
+
+  // Bombs
+  bombs.forEach(b=>{
+    const x=b.col*CELL, y=b.row*CELL;
+    const pulse=Math.sin(Date.now()*0.01*(4-b.timer/60))*.15+.85;
+    ctx.save();
+    ctx.translate(x+CELL/2,y+CELL/2);
+    ctx.scale(pulse,pulse);
+    ctx.shadowColor='#ff9900'; ctx.shadowBlur=15;
+    ctx.beginPath(); ctx.arc(0,0,CELL*.32,0,Math.PI*2);
+    ctx.fillStyle='#1a1a1a'; ctx.fill();
+    ctx.strokeStyle='#ff9900'; ctx.lineWidth=2; ctx.stroke();
+    ctx.shadowBlur=0;
+    ctx.font=`${CELL*.4}px serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('💣',0,2);
+    ctx.restore();
+  });
+
+  // Explosions
+  explosions.forEach(ex=>{
+    const prog=ex.timer/ex.maxTimer;
+    ex.cells.forEach(({r,c})=>{
+      const x=c*CELL,y=r*CELL;
+      const center=r===ex.cells[0].r&&c===ex.cells[0].c;
+      ctx.shadowColor='#ff9900'; ctx.shadowBlur=20;
+      const g=ctx.createRadialGradient(x+CELL/2,y+CELL/2,0,x+CELL/2,y+CELL/2,CELL/2);
+      g.addColorStop(0,`rgba(255,255,200,${prog})`);
+      g.addColorStop(.5,`rgba(255,150,0,${prog*.9})`);
+      g.addColorStop(1,`rgba(255,0,0,${prog*.5})`);
+      ctx.fillStyle=g;
+      ctx.fillRect(x,y,CELL,CELL);
+      ctx.shadowBlur=0;
+    });
+  });
+
+  // Players
+  players.forEach(p=>{
+    if(!p.alive) return;
+    const flash=p.invincible>0&&Math.floor(p.invincible/5)%2===0;
+    if(flash) return;
+    const x=p.x, y=p.y;
+    ctx.shadowColor=p.glow; ctx.shadowBlur=18;
+    // Body circle
+    ctx.beginPath(); ctx.arc(x+CELL/2,y+CELL/2,CELL*.35,0,Math.PI*2);
+    ctx.fillStyle=p.color; ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.4)'; ctx.lineWidth=2; ctx.stroke();
+    // Eyes
+    ctx.shadowBlur=0;
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.arc(x+CELL*.35,y+CELL*.38,4,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x+CELL*.65,y+CELL*.38,4,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#000';
+    ctx.beginPath(); ctx.arc(x+CELL*.37,y+CELL*.38,2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x+CELL*.63,y+CELL*.38,2,0,Math.PI*2); ctx.fill();
+    // Label
+    ctx.fillStyle=p.color;
+    ctx.font='bold 9px Orbitron,sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText(`P${p.idx+1}`,x+CELL/2,y-4);
+  });
+}
+
+function loop(){
+  if(!running) return;
+  update();
+  draw();
+  animId=requestAnimationFrame(loop);
+}
+
+function startGame(){
+  initGrid();
+  initPlayers();
+  bombs=[]; explosions=[]; powerups=[];
+  lastBomb=[false,false];
+  document.getElementById('ov').classList.add('h');
+  players.forEach(p=>{ updateLives(p); updatePowerDisplay(p); });
+
+  // Timer
+  gameTimer=180;
+  clearInterval(timerInterval);
+  timerInterval=setInterval(()=>{
+    if(!running) return;
+    gameTimer--;
+    const m=Math.floor(gameTimer/60), s=gameTimer%60;
+    document.getElementById('timerEl').textContent=`${m}:${s.toString().padStart(2,'0')}`;
+    if(gameTimer<=0){
+      running=false;
+      clearInterval(timerInterval);
+      // Whoever has more lives wins
+      const p0=players[0], p1=players[1];
+      const ov=document.getElementById('ov');
+      ov.classList.remove('h');
+      ov.querySelector('.ot').textContent=p0.lives>p1.lives?'🏆 P1 WINS!':p1.lives>p0.lives?'🏆 P2 WINS!':'DRAW!';
+      ov.querySelector('.os').textContent='Time expired!';
+      ov.querySelector('.ob').onclick=startGame;
+    }
+  },1000);
+
+  running=true;
+  cancelAnimationFrame(animId);
+  loop();
+}
+
+// Virtual D-pad bindings
+function bindBtn(id,onPress,onRelease){
+  const btn=document.getElementById(id);
+  if(!btn) return;
+  btn.addEventListener('touchstart',e=>{e.preventDefault();btn.classList.add('pressed');onPress();},{passive:false});
+  btn.addEventListener('touchend',e=>{e.preventDefault();btn.classList.remove('pressed');onRelease&&onRelease();},{passive:false});
+  btn.addEventListener('touchcancel',e=>{btn.classList.remove('pressed');onRelease&&onRelease();},{passive:false});
+}
+bindBtn('v1u',()=>keys['w']=true,()=>keys['w']=false);
+bindBtn('v1d',()=>keys['s']=true,()=>keys['s']=false);
+bindBtn('v1l',()=>keys['a']=true,()=>keys['a']=false);
+bindBtn('v1r',()=>keys['d']=true,()=>keys['d']=false);
+bindBtn('v1b',()=>keys['f']=true,()=>keys['f']=false);
+bindBtn('v2u',()=>keys['ArrowUp']=true,()=>keys['ArrowUp']=false);
+bindBtn('v2d',()=>keys['ArrowDown']=true,()=>keys['ArrowDown']=false);
+bindBtn('v2l',()=>keys['ArrowLeft']=true,()=>keys['ArrowLeft']=false);
+bindBtn('v2r',()=>keys['ArrowRight']=true,()=>keys['ArrowRight']=false);
+bindBtn('v2b',()=>keys['l']=true,()=>keys['l']=false);
+
+draw();
+</script>
+</body>
+</html>

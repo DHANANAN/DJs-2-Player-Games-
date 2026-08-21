@@ -47,11 +47,23 @@ canvas{display:block;width:100%;}
 .cb p{font-size:.82rem;color:var(--dim);line-height:1.7;}
 .k{display:inline-block;font-family:'Orbitron',sans-serif;font-size:.5rem;
   padding:.1rem .35rem;border:1px solid var(--border);color:var(--text);background:rgba(255,255,255,.05);}
+.vpad-wrap{position:fixed;bottom:0;left:0;right:0;pointer-events:none;z-index:1000;
+  display:flex;justify-content:space-between;padding:0 .5rem .8rem;}
+.vpad,.vpad2r{pointer-events:all;position:relative;width:130px;height:130px;}
+.vbtn{position:absolute;width:44px;height:44px;background:rgba(0,245,255,.12);
+  border:2px solid rgba(0,245,255,.35);color:#00f5ff;font-size:1.1rem;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  touch-action:none;user-select:none;-webkit-user-select:none;}
+.vbtn:active,.vbtn.pressed{background:rgba(0,245,255,.4);}
+.vbtn.p2{background:rgba(255,0,170,.12);border-color:rgba(255,0,170,.35);color:#ff00aa;}
+.vbtn.p2:active,.vbtn.p2.pressed{background:rgba(255,0,170,.4);}
+.vup{top:0;left:43px;}.vdown{bottom:0;left:43px;}.vleft{left:0;top:43px;}.vright{right:0;top:43px;}
+@media(pointer:fine){.vpad-wrap{display:none!important;}}
 </style>
 </head>
 <body>
 <nav class="nav">
-  <a href="../index.html" class="back">← Hub</a>
+  <a href="index.html" class="back">← Hub</a>
   <span class="title">Sumo</span>
   <span style="width:70px"></span>
 </nav>
@@ -73,6 +85,20 @@ canvas{display:block;width:100%;}
     <p><span class="k">W</span><span class="k">A</span><span class="k">S</span><span class="k">D</span> — Move &amp; Push</p></div>
   <div class="cb"><h4>// Player 2 (Pink)</h4>
     <p><span class="k">↑</span><span class="k">←</span><span class="k">↓</span><span class="k">→</span> — Move &amp; Push</p></div>
+</div>
+<div class="vpad-wrap">
+  <div class="vpad">
+    <button class="vbtn vup" id="v1u">▲</button>
+    <button class="vbtn vleft" id="v1l">◀</button>
+    <button class="vbtn vright" id="v1r">▶</button>
+    <button class="vbtn vdown" id="v1d">▼</button>
+  </div>
+  <div class="vpad2r">
+    <button class="vbtn p2 vup" id="v2u">▲</button>
+    <button class="vbtn p2 vleft" id="v2l">◀</button>
+    <button class="vbtn p2 vright" id="v2r">▶</button>
+    <button class="vbtn p2 vdown" id="v2d">▼</button>
+  </div>
 </div>
 
 <script>
@@ -267,6 +293,15 @@ function endMatch(){
   ov.querySelector('.ob').onclick=startGame;
 }
 window.addEventListener('resize',()=>{if(!running){resize();}});
+function bindVpad(id,key){
+  const btn=document.getElementById(id);if(!btn)return;
+  btn.addEventListener('touchstart',e=>{e.preventDefault();keys[key]=true;btn.classList.add('pressed');},{passive:false});
+  btn.addEventListener('touchend',e=>{e.preventDefault();keys[key]=false;btn.classList.remove('pressed');},{passive:false});
+  btn.addEventListener('touchcancel',e=>{keys[key]=false;btn.classList.remove('pressed');},{passive:false});
+}
+bindVpad('v1u','W');bindVpad('v1d','S');bindVpad('v1l','A');bindVpad('v1r','D');
+bindVpad('v2u','ArrowUp');bindVpad('v2d','ArrowDown');bindVpad('v2l','ArrowLeft');bindVpad('v2r','ArrowRight');
+try{screen.orientation?.lock('landscape').catch(()=>{});}catch(e){}
 </script>
 </body>
 </html>

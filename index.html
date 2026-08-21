@@ -2,143 +2,407 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no"/>
+<meta name="description" content="DJ's Games Hub — 18 browser games with mobile touch controls, online multiplayer, 3D graphics and AI opponents. No download required."/>
 <title>DJ's Games Hub</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet"/>
 <style>
+/* ─── DESIGN TOKENS ─────────────────────────────────── */
 :root{
   --bg:#04040d;--bg2:#080818;--cyan:#00f5ff;--magenta:#ff00aa;
-  --gold:#ffd700;--green:#00ff88;--panel:rgba(0,245,255,0.04);
-  --border:rgba(0,245,255,0.16);--text:#c8d8ff;--dim:#5a6a8a;
+  --gold:#ffd700;--green:#00ff88;
+  --panel:rgba(0,245,255,0.04);--border:rgba(0,245,255,0.16);
+  --text:#c8d8ff;--dim:#5a6a8a;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;}
 body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;
-  min-height:100vh;overflow-x:hidden;cursor:crosshair;}
+  min-height:100vh;overflow-x:hidden;}
 body::before{content:'';position:fixed;inset:0;z-index:9999;
   background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px);
   pointer-events:none;}
 canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none;}
-
 .wrap{position:relative;z-index:2;max-width:1280px;margin:0 auto;padding:0 1.5rem;}
 
-/* ── HEADER ── */
-header{text-align:center;padding:3.5rem 0 2rem;border-bottom:1px solid var(--border);
-  position:relative;z-index:2;}
-.site-tag{font-family:'Orbitron',sans-serif;font-size:.6rem;letter-spacing:.35em;
-  color:var(--magenta);text-transform:uppercase;margin-bottom:1rem;
-  animation:fadeUp .5s ease both;}
-h1{font-family:'Press Start 2P',monospace;font-size:clamp(1.2rem,4vw,2.8rem);
-  color:#fff;text-shadow:0 0 30px rgba(0,245,255,.7),0 0 60px rgba(0,245,255,.3);
-  line-height:1.4;animation:fadeUp .6s .05s ease both;}
+/* ─── HEADER ─────────────────────────────────────────── */
+header{text-align:center;padding:2.8rem 0 1.4rem;border-bottom:1px solid var(--border);position:relative;z-index:2;}
+.site-tag{font-family:'Orbitron',sans-serif;font-size:.58rem;letter-spacing:.35em;color:var(--magenta);margin-bottom:.7rem;animation:fadeUp .5s ease both;}
+h1{font-family:'Press Start 2P',monospace;font-size:clamp(1rem,3.5vw,2.4rem);color:#fff;
+  text-shadow:0 0 30px rgba(0,245,255,.7),0 0 60px rgba(0,245,255,.3);
+  line-height:1.4;animation:fadeUp .55s .05s ease both;}
 h1 em{color:var(--cyan);font-style:normal;}
-.sub{font-size:1rem;color:var(--dim);margin-top:.9rem;font-weight:300;
-  letter-spacing:.05em;animation:fadeUp .6s .1s ease both;}
-.bar{width:100px;height:2px;margin:1.5rem auto 0;
-  background:linear-gradient(90deg,var(--magenta),var(--cyan));
-  box-shadow:0 0 10px var(--cyan);animation:expand .7s .2s ease both;}
+.sub{font-size:.95rem;color:var(--dim);margin-top:.7rem;font-weight:300;letter-spacing:.05em;animation:fadeUp .55s .1s ease both;}
+.bar{width:100px;height:2px;margin:1.2rem auto 0;background:linear-gradient(90deg,var(--magenta),var(--cyan));box-shadow:0 0 10px var(--cyan);animation:expand .7s .2s ease both;}
 
-/* ── STATS ── */
-.stats{display:flex;justify-content:center;gap:3rem;flex-wrap:wrap;
-  padding:1.8rem 0;border-bottom:1px solid var(--border);}
+/* ─── STATS ──────────────────────────────────────────── */
+.stats{display:flex;justify-content:center;gap:2.5rem;flex-wrap:wrap;padding:1.4rem 0;border-bottom:1px solid var(--border);}
 .stat{text-align:center;}
-.stat-n{font-family:'Orbitron',sans-serif;font-size:1.8rem;font-weight:900;
-  color:var(--gold);text-shadow:0 0 16px rgba(255,215,0,.5);}
-.stat-l{font-family:'Orbitron',sans-serif;font-size:.5rem;letter-spacing:.15em;
-  color:var(--dim);text-transform:uppercase;margin-top:.2rem;}
+.stat-n{font-family:'Orbitron',sans-serif;font-size:1.6rem;font-weight:900;color:var(--gold);text-shadow:0 0 16px rgba(255,215,0,.5);}
+.stat-l{font-family:'Orbitron',sans-serif;font-size:.48rem;letter-spacing:.15em;color:var(--dim);text-transform:uppercase;margin-top:.2rem;}
 
-/* ── SECTION ── */
-.sec{padding:2.5rem 0 .5rem;display:flex;align-items:center;gap:1rem;}
-.sec h2{font-family:'Orbitron',sans-serif;font-size:.75rem;font-weight:700;
-  letter-spacing:.25em;color:var(--cyan);white-space:nowrap;}
+/* ══════════════════════════════════════════════════════
+   MAC DOCK CAROUSEL — GameBoy style selector
+   ══════════════════════════════════════════════════════ */
+.dock-section{
+  position:sticky;top:0;z-index:100;
+  background:rgba(4,4,13,.85);
+  backdrop-filter:blur(24px) saturate(1.6);
+  -webkit-backdrop-filter:blur(24px) saturate(1.6);
+  border-bottom:1px solid rgba(0,245,255,.12);
+  padding:1rem 0 .6rem;
+  overflow:hidden;
+}
+.dock-label{
+  font-family:'Orbitron',sans-serif;font-size:.48rem;letter-spacing:.35em;
+  color:var(--dim);text-align:center;margin-bottom:.6rem;text-transform:uppercase;
+}
+.dock-label span{color:var(--cyan);}
+
+/* The scrollable row */
+.dock-track-wrap{
+  position:relative;
+  overflow:hidden;
+  cursor:grab;
+  user-select:none;
+  -webkit-user-select:none;
+}
+.dock-track-wrap:active{cursor:grabbing;}
+.dock-track{
+  display:flex;
+  align-items:flex-end;
+  gap:10px;
+  padding:12px 50vw;    /* big side padding so active item is always centred */
+  width:max-content;
+  transition:transform .3s cubic-bezier(.25,.46,.45,.94);
+  will-change:transform;
+}
+
+/* Individual dock icon */
+.dock-item{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:5px;
+  cursor:pointer;
+  flex-shrink:0;
+  transition:transform .22s cubic-bezier(.34,1.56,.64,1);
+  transform-origin:bottom center;
+  outline:none;
+}
+.dock-ico{
+  width:70px;height:70px;
+  border-radius:18px;
+  background:linear-gradient(145deg,rgba(0,245,255,.08),rgba(255,0,170,.05));
+  border:1px solid rgba(0,245,255,.2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:2rem;
+  position:relative;
+  transition:
+    box-shadow .22s ease,
+    border-color .22s ease,
+    background .22s ease;
+  box-shadow:0 4px 14px rgba(0,0,0,.5);
+}
+/* The colour accent bar at the bottom of each icon */
+.dock-ico::after{
+  content:'';position:absolute;bottom:-1px;left:10%;right:10%;
+  height:2px;border-radius:2px;
+  background:linear-gradient(90deg,var(--magenta),var(--cyan));
+  opacity:0;transition:opacity .22s;
+}
+
+/* Active / hovered state */
+.dock-item.active .dock-ico,
+.dock-item:hover .dock-ico{
+  border-color:var(--cyan);
+  box-shadow:0 0 22px rgba(0,245,255,.45),0 4px 18px rgba(0,0,0,.6);
+  background:linear-gradient(145deg,rgba(0,245,255,.18),rgba(255,0,170,.12));
+}
+.dock-item.active .dock-ico::after,
+.dock-item:hover .dock-ico::after{opacity:1;}
+
+/* Neighbour magnification — done via JS class */
+.dock-item.near-1 .dock-ico{width:82px;height:82px;font-size:2.4rem;border-radius:20px;}
+.dock-item.near-2 .dock-ico{width:90px;height:90px;font-size:2.7rem;border-radius:21px;}
+.dock-item.active .dock-ico{width:108px;height:108px;font-size:3.2rem;border-radius:24px;
+  box-shadow:0 0 40px rgba(0,245,255,.6),0 8px 30px rgba(0,0,0,.7);}
+
+.dock-name{
+  font-family:'Orbitron',sans-serif;font-size:.42rem;letter-spacing:.08em;
+  color:var(--dim);text-align:center;max-width:80px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;
+  transition:color .22s;
+}
+.dock-item.active .dock-name{color:var(--cyan);}
+
+/* Dot indicator */
+.dock-dot{
+  width:5px;height:5px;border-radius:50%;
+  background:var(--cyan);opacity:0;
+  transition:opacity .22s;box-shadow:0 0 8px var(--cyan);
+}
+.dock-item.active .dock-dot{opacity:1;}
+
+/* The "selected game" reveal panel below the dock */
+.dock-preview{
+  position:relative;z-index:2;
+  max-height:0;overflow:hidden;
+  transition:max-height .4s cubic-bezier(.4,0,.2,1);
+  background:rgba(4,4,13,.95);
+  border-bottom:1px solid rgba(0,245,255,.12);
+}
+.dock-preview.open{max-height:200px;}
+.dock-preview-inner{
+  display:flex;align-items:center;gap:1.5rem;
+  padding:.8rem 2rem;
+  max-width:900px;margin:0 auto;
+}
+.dp-ico{font-size:3rem;filter:drop-shadow(0 0 16px rgba(0,245,255,.5));}
+.dp-info{flex:1;}
+.dp-name{font-family:'Orbitron',sans-serif;font-size:1rem;font-weight:900;color:#fff;margin-bottom:.25rem;}
+.dp-desc{font-size:.88rem;color:var(--dim);line-height:1.5;margin-bottom:.5rem;}
+.dp-tags{display:flex;gap:.3rem;flex-wrap:wrap;margin-bottom:.5rem;}
+.dp-btn{
+  font-family:'Orbitron',sans-serif;font-size:.62rem;font-weight:700;letter-spacing:.2em;
+  padding:.65rem 2rem;background:var(--cyan);color:var(--bg);border:none;cursor:pointer;
+  box-shadow:0 0 22px rgba(0,245,255,.5);transition:all .2s;text-decoration:none;
+  display:inline-block;
+}
+.dp-btn:hover{background:#fff;box-shadow:0 0 30px rgba(255,255,255,.4);}
+/* Keyboard nav hint */
+.dock-hint{
+  font-family:'Orbitron',sans-serif;font-size:.4rem;color:var(--dim);
+  text-align:center;padding:.3rem 0 .4rem;letter-spacing:.1em;
+}
+.dock-hint kbd{
+  display:inline-block;padding:.1rem .35rem;border:1px solid var(--dim);border-radius:3px;
+  font-size:.4rem;color:var(--text);margin:0 .15rem;
+}
+
+/* ─── SECTION HEADERS ─────────────────────────────────── */
+.sec{padding:2.2rem 0 .5rem;display:flex;align-items:center;gap:1rem;}
+.sec h2{font-family:'Orbitron',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.25em;color:var(--cyan);white-space:nowrap;}
 .sec-line{flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent);}
 
-/* ── GRID ── */
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
-  gap:1.2rem;padding-bottom:4rem;}
-
-/* ── CARD ── */
-a.card{display:block;text-decoration:none;position:relative;
-  background:var(--panel);border:1px solid var(--border);
-  overflow:hidden;transition:transform .25s,box-shadow .25s;
-  animation:fadeUp .5s ease both;}
-a.card:hover{transform:translateY(-5px);
-  box-shadow:0 0 28px rgba(0,245,255,.12),0 0 0 1px var(--cyan);}
-a.card::before,a.card::after{content:'';position:absolute;
-  width:12px;height:12px;border-color:var(--cyan);border-style:solid;
-  transition:opacity .3s;opacity:0;z-index:3;}
+/* ─── GAME GRID ───────────────────────────────────────── */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1.1rem;padding-bottom:4rem;}
+a.card{display:block;text-decoration:none;position:relative;background:var(--panel);border:1px solid var(--border);overflow:hidden;transition:transform .25s,box-shadow .25s;animation:fadeUp .5s ease both;}
+a.card:hover{transform:translateY(-6px);box-shadow:0 0 30px rgba(0,245,255,.13),0 0 0 1px var(--cyan);}
+a.card::before,a.card::after{content:'';position:absolute;width:12px;height:12px;border-color:var(--cyan);border-style:solid;transition:opacity .3s;opacity:0;z-index:3;}
 a.card::before{top:0;left:0;border-width:2px 0 0 2px;}
 a.card::after{bottom:0;right:0;border-width:0 2px 2px 0;}
 a.card:hover::before,a.card:hover::after{opacity:1;}
 .card-accent{height:2px;background:linear-gradient(90deg,var(--magenta),var(--cyan));}
-.card-glow{position:absolute;inset:0;
-  background:radial-gradient(circle at 50% 0%,rgba(0,245,255,.07),transparent 70%);
-  opacity:0;transition:opacity .3s;pointer-events:none;}
+.card-glow{position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(0,245,255,.07),transparent 70%);opacity:0;transition:opacity .3s;pointer-events:none;}
 a.card:hover .card-glow{opacity:1;}
-.card-ico{font-size:2.6rem;padding:1.5rem 1.2rem .6rem;line-height:1;
-  transition:transform .3s;filter:drop-shadow(0 0 10px rgba(0,245,255,.35));}
+.card-ico{font-size:2.5rem;padding:1.4rem 1.2rem .6rem;line-height:1;transition:transform .3s;filter:drop-shadow(0 0 10px rgba(0,245,255,.35));}
 a.card:hover .card-ico{transform:scale(1.15) rotate(-4deg);}
 .card-body{padding:0 1.2rem 1.2rem;}
-.card-name{font-family:'Orbitron',sans-serif;font-size:.78rem;font-weight:700;
-  letter-spacing:.08em;color:#fff;margin-bottom:.3rem;}
-.card-desc{font-size:.82rem;color:var(--dim);line-height:1.5;font-weight:300;margin-bottom:.8rem;}
-.card-tags{display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:.8rem;}
-.tag{font-family:'Orbitron',sans-serif;font-size:.45rem;font-weight:700;
-  letter-spacing:.1em;padding:.15rem .5rem;border:1px solid;}
+.card-name{font-family:'Orbitron',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.08em;color:#fff;margin-bottom:.3rem;}
+.card-desc{font-size:.82rem;color:var(--dim);line-height:1.5;font-weight:300;margin-bottom:.7rem;}
+.card-tags{display:flex;gap:.3rem;flex-wrap:wrap;margin-bottom:.7rem;}
+.tag{font-family:'Orbitron',sans-serif;font-size:.43rem;font-weight:700;letter-spacing:.1em;padding:.14rem .5rem;border:1px solid;}
 .t2p{border-color:var(--green);color:var(--green);}
 .tai{border-color:var(--magenta);color:var(--magenta);}
 .trt{border-color:#ff6600;color:#ff6600;}
 .ttr{border-color:var(--cyan);color:var(--cyan);}
-.play{display:inline-block;font-family:'Orbitron',sans-serif;
-  font-size:.55rem;font-weight:700;letter-spacing:.18em;
-  padding:.55rem 1.2rem;background:var(--cyan);color:var(--bg);
-  opacity:0;transform:translateY(5px);transition:all .25s;}
+.tonline{border-color:var(--gold);color:var(--gold);}
+.tsolo{border-color:#8888ff;color:#8888ff;}
+.t3d{border-color:#ff66ff;color:#ff66ff;}
+.tmob{border-color:#44ff88;color:#44ff88;}
+.play{display:inline-block;font-family:'Orbitron',sans-serif;font-size:.55rem;font-weight:700;letter-spacing:.18em;padding:.5rem 1.1rem;background:var(--cyan);color:var(--bg);opacity:0;transform:translateY(5px);transition:all .25s;}
 a.card:hover .play{opacity:1;transform:translateY(0);}
 
-/* ── FOOTER ── */
-footer{border-top:1px solid var(--border);padding:2rem 0;
-  display:flex;justify-content:space-between;align-items:center;
-  flex-wrap:wrap;gap:1rem;position:relative;z-index:2;}
-.f-brand{font-family:'Press Start 2P',monospace;font-size:.55rem;
-  color:var(--cyan);text-shadow:0 0 14px rgba(0,245,255,.6);}
+/* ─── FOOTER ──────────────────────────────────────────── */
+footer{border-top:1px solid var(--border);padding:2rem 0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;position:relative;z-index:2;}
+.f-brand{font-family:'Press Start 2P',monospace;font-size:.55rem;color:var(--cyan);text-shadow:0 0 14px rgba(0,245,255,.6);}
 .f-note{font-size:.8rem;color:var(--dim);}
 
+/* ─── KEYFRAMES ──────────────────────────────────────── */
 @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 @keyframes expand{from{width:0;opacity:0}to{width:100px;opacity:1}}
+@keyframes dockIn{from{opacity:0;transform:translateY(-30px)}to{opacity:1;transform:translateY(0)}}
 
+/* ─── RESPONSIVE ─────────────────────────────────────── */
 @media(max-width:600px){
-  h1{font-size:1.1rem;}
-  .grid{grid-template-columns:1fr 1fr;gap:.8rem;}
+  h1{font-size:1rem;}
+  .grid{grid-template-columns:1fr 1fr;gap:.7rem;}
   .play{opacity:1;transform:none;}
-  .stats{gap:1.5rem;}
+  .stats{gap:1.2rem;}
+  .dock-ico{width:54px!important;height:54px!important;font-size:1.6rem!important;border-radius:14px!important;}
+  .dock-item.near-1 .dock-ico{width:64px!important;height:64px!important;}
+  .dock-item.near-2 .dock-ico{width:72px!important;height:72px!important;}
+  .dock-item.active .dock-ico{width:84px!important;height:84px!important;font-size:2.3rem!important;}
+  .dp-ico{font-size:2rem;}
+  .dp-name{font-size:.8rem;}
+  .dock-preview-inner{padding:.7rem 1rem;gap:.9rem;}
 }
 </style>
 </head>
 <body>
 <canvas id="bg"></canvas>
 
+<!-- ═══════════════════════════════════════════════════════
+     HEADER
+═══════════════════════════════════════════════════════ -->
 <header>
   <div class="wrap">
     <p class="site-tag">DJLexFolio · Creative Coding</p>
     <h1>DJ's <em>Games</em> Hub</h1>
-    <p class="sub">11 Games · 2-Player Local · AI Opponents · Offline Ready</p>
+    <p class="sub">18 Games · 2-Player Local · Online Rooms · Touch Controls · AI Opponents</p>
     <div class="bar"></div>
   </div>
 </header>
 
 <div class="wrap">
   <div class="stats">
-    <div class="stat"><div class="stat-n">11</div><div class="stat-l">Games</div></div>
-    <div class="stat"><div class="stat-n">3</div><div class="stat-l">AI Modes</div></div>
-    <div class="stat"><div class="stat-n">100%</div><div class="stat-l">Offline</div></div>
-    <div class="stat"><div class="stat-n">0</div><div class="stat-l">Downloads Needed</div></div>
+    <div class="stat"><div class="stat-n">18</div><div class="stat-l">Games</div></div>
+    <div class="stat"><div class="stat-n">5+</div><div class="stat-l">AI Modes</div></div>
+    <div class="stat"><div class="stat-n">4-Digit</div><div class="stat-l">Online Rooms</div></div>
+    <div class="stat"><div class="stat-n">100%</div><div class="stat-l">Offline Ready</div></div>
+    <div class="stat"><div class="stat-n">📱</div><div class="stat-l">Touch Ready</div></div>
   </div>
+</div>
 
-  <div class="sec"><h2>// Select a Game</h2><div class="sec-line"></div></div>
+<!-- ═══════════════════════════════════════════════════════
+     MAC DOCK GAME SELECTOR (sticky, always visible)
+═══════════════════════════════════════════════════════ -->
+<div class="dock-section" id="dockSection" style="animation:dockIn .6s .3s ease both;">
+  <p class="dock-label">// <span>Quick Select</span> — drag · click · arrow keys</p>
+  <div class="dock-track-wrap" id="dockWrap">
+    <div class="dock-track" id="dockTrack"></div>
+  </div>
+  <div class="dock-hint">
+    <kbd>←</kbd><kbd>→</kbd> navigate &nbsp;|&nbsp; <kbd>Enter</kbd> launch &nbsp;|&nbsp; drag to scroll
+  </div>
+</div>
 
+<!-- Selected game preview panel -->
+<div class="dock-preview" id="dockPreview">
+  <div class="dock-preview-inner">
+    <div class="dp-ico" id="dpIco"></div>
+    <div class="dp-info">
+      <div class="dp-name" id="dpName"></div>
+      <div class="dp-desc" id="dpDesc"></div>
+      <div class="dp-tags" id="dpTags"></div>
+    </div>
+    <a class="dp-btn" id="dpBtn" href="#">PLAY NOW →</a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     FULL GAME GRID (scroll down)
+═══════════════════════════════════════════════════════ -->
+<div class="wrap" id="allGames">
+
+  <div class="sec"><h2>// 2-Player &amp; Multiplayer</h2><div class="sec-line"></div></div>
   <div class="grid">
 
-    <a class="card" href="games/tictactoe.html">
+    <a class="card" href="pingpong (1).html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">🏓</div>
+      <div class="card-body">
+        <div class="card-name">Ping Pong</div>
+        <div class="card-desc">Canvas pong with spin physics. W/S vs Arrows. First to 7 wins.</div>
+        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag tai">AI Mode</span><span class="tag trt">Real-time</span><span class="tag tmob">Touch</span></div>
+        <span class="play">Play Now →</span>
+      </div>
+    </a>
+
+    <a class="card" href="airhockey.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">🏒</div>
+      <div class="card-body">
+        <div class="card-name">Air Hockey</div>
+        <div class="card-desc">Frictionless puck physics. WASD vs arrows. Smash the puck into the net.</div>
+        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag trt">Real-time</span><span class="tag tmob">Touch</span></div>
+        <span class="play">Play Now →</span>
+      </div>
+    </a>
+
+    <a class="card" href="snakes.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">🐍</div>
+      <div class="card-body">
+        <div class="card-name">Snakes</div>
+        <div class="card-desc">Two snakes, one grid. Eat food, grow longer, trap your opponent.</div>
+        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag trt">Real-time</span><span class="tag tmob">Touch</span></div>
+        <span class="play">Play Now →</span>
+      </div>
+    </a>
+
+    <a class="card" href="sumo.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">🤼</div>
+      <div class="card-body">
+        <div class="card-name">Sumo</div>
+        <div class="card-desc">Physics-based pushing. Force your opponent outside the ring. Best of 5.</div>
+        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag trt">Real-time</span><span class="tag tmob">Touch</span></div>
+        <span class="play">Play Now →</span>
+      </div>
+    </a>
+
+    <a class="card" href="racing.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">🏎️</div>
+      <div class="card-body">
+        <div class="card-name">Racing</div>
+        <div class="card-desc">Top-down track racing. WASD vs arrows. 3 laps — first to finish wins.</div>
+        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag trt">Real-time</span><span class="tag tmob">Touch</span></div>
+        <span class="play">Play Now →</span>
+      </div>
+    </a>
+
+    <a class="card" href="sword.html">
+      <div class="card-accent"></div><div class="card-glow"></div>
+      <div class="card-ico">⚔️</div>
+      <div class="card-body">
+        <div class="card-name">Sword Duels</div>
+        <div class="card-desc">Side-scroll blade combat. Move, jump, attack, block. Drain opponent's HP.</div>
+        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag tai">AI Mode</span><span class="tag trt">Real-time</span><span class="tag tmob">Touch</span></div>
+        <span class="play">Play Now →</span>
+      </div>
+    </a>
+
+    <a class="card" href="bomberman.html">
+      <div class="card-accent" style="background:linear-gradient(90deg,var(--gold),var(--magenta))"></div><div class="card-glow"></div>
+      <div class="card-ico">💣</div>
+      <div class="card-body">
+        <div class="card-name">Bomberman</div>
+        <div class="card-desc">Plant bombs, destroy walls, collect power-ups, eliminate your opponent.</div>
+        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag trt">Real-time</span><span class="tag tmob">Touch</span></div>
+        <span class="play">Play Now →</span>
+      </div>
+    </a>
+
+    <a class="card" href="tanks.html">
+      <div class="card-accent" style="background:linear-gradient(90deg,var(--green),var(--cyan))"></div><div class="card-glow"></div>
+      <div class="card-ico">🛡️</div>
+      <div class="card-body">
+        <div class="card-name">Tank Battle</div>
+        <div class="card-desc">Top-down tank combat. Wall-bouncing bullets, 3 lives each. Destroy!</div>
+        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag trt">Real-time</span><span class="tag tmob">Touch</span></div>
+        <span class="play">Play Now →</span>
+      </div>
+    </a>
+
+    <a class="card" href="pong3d.html">
+      <div class="card-accent" style="background:linear-gradient(90deg,#ff66ff,var(--cyan))"></div><div class="card-glow"></div>
+      <div class="card-ico">🎮</div>
+      <div class="card-body">
+        <div class="card-name">3D Pong</div>
+        <div class="card-desc">Classic Pong inside a neon 3D tunnel. vs AI, local 2P, or online room code!</div>
+        <div class="card-tags"><span class="tag t3d">3D</span><span class="tag t2p">2 Player</span><span class="tag tai">AI Mode</span><span class="tag tonline">Online</span><span class="tag tmob">Touch</span></div>
+        <span class="play">Play Now →</span>
+      </div>
+    </a>
+
+  </div>
+
+  <div class="sec"><h2>// Turn-Based &amp; Strategy</h2><div class="sec-line"></div></div>
+  <div class="grid">
+
+    <a class="card" href="tictactoe (1).html">
       <div class="card-accent"></div><div class="card-glow"></div>
       <div class="card-ico">⭕</div>
       <div class="card-body">
@@ -149,51 +413,18 @@ footer{border-top:1px solid var(--border);padding:2rem 0;
       </div>
     </a>
 
-    <a class="card" href="games/pingpong.html">
-      <div class="card-accent"></div><div class="card-glow"></div>
-      <div class="card-ico">🏓</div>
-      <div class="card-body">
-        <div class="card-name">Ping Pong</div>
-        <div class="card-desc">Canvas pong with spin physics. W/S vs Arrows. First to 7 wins.</div>
-        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag tai">AI Mode</span><span class="tag trt">Real-time</span></div>
-        <span class="play">Play Now →</span>
-      </div>
-    </a>
-
-    <a class="card" href="games/chess.html">
+    <a class="card" href="chess (1).html">
       <div class="card-accent"></div><div class="card-glow"></div>
       <div class="card-ico">♟️</div>
       <div class="card-body">
         <div class="card-name">Chess</div>
-        <div class="card-desc">Full rules chess with castling, en passant & promotion. Pass-and-play or vs AI.</div>
+        <div class="card-desc">Full rules chess with castling, en passant &amp; promotion. vs AI or pass-and-play.</div>
         <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag tai">AI Mode</span><span class="tag ttr">Turn-based</span></div>
         <span class="play">Play Now →</span>
       </div>
     </a>
 
-    <a class="card" href="games/airhockey.html">
-      <div class="card-accent"></div><div class="card-glow"></div>
-      <div class="card-ico">🏒</div>
-      <div class="card-body">
-        <div class="card-name">Air Hockey</div>
-        <div class="card-desc">Frictionless puck physics. WASD vs arrows. Smash the puck into the net.</div>
-        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag trt">Real-time</span></div>
-        <span class="play">Play Now →</span>
-      </div>
-    </a>
-
-    <a class="card" href="games/snakes.html">
-      <div class="card-accent"></div><div class="card-glow"></div>
-      <div class="card-ico">🐍</div>
-      <div class="card-body">
-        <div class="card-name">Snakes</div>
-        <div class="card-desc">Two snakes, one grid. Eat food, grow longer, trap your opponent.</div>
-        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag trt">Real-time</span></div>
-        <span class="play">Play Now →</span>
-      </div>
-    </a>
-
-    <a class="card" href="games/pool.html">
+    <a class="card" href="pool.html">
       <div class="card-accent"></div><div class="card-glow"></div>
       <div class="card-ico">🎱</div>
       <div class="card-body">
@@ -204,7 +435,7 @@ footer{border-top:1px solid var(--border);padding:2rem 0;
       </div>
     </a>
 
-    <a class="card" href="games/penalty.html">
+    <a class="card" href="penalty.html">
       <div class="card-accent"></div><div class="card-glow"></div>
       <div class="card-ico">⚽</div>
       <div class="card-body">
@@ -215,18 +446,7 @@ footer{border-top:1px solid var(--border);padding:2rem 0;
       </div>
     </a>
 
-    <a class="card" href="games/sumo.html">
-      <div class="card-accent"></div><div class="card-glow"></div>
-      <div class="card-ico">🤼</div>
-      <div class="card-body">
-        <div class="card-name">Sumo</div>
-        <div class="card-desc">Physics-based pushing. Force your opponent outside the ring. Best of 5.</div>
-        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag trt">Real-time</span></div>
-        <span class="play">Play Now →</span>
-      </div>
-    </a>
-
-    <a class="card" href="games/minigolf.html">
+    <a class="card" href="minigolf.html">
       <div class="card-accent"></div><div class="card-glow"></div>
       <div class="card-ico">⛳</div>
       <div class="card-body">
@@ -237,24 +457,40 @@ footer{border-top:1px solid var(--border);padding:2rem 0;
       </div>
     </a>
 
-    <a class="card" href="games/racing.html">
-      <div class="card-accent"></div><div class="card-glow"></div>
-      <div class="card-ico">🏎️</div>
+  </div>
+
+  <div class="sec"><h2>// Solo Games</h2><div class="sec-line"></div></div>
+  <div class="grid">
+
+    <a class="card" href="game2048.html">
+      <div class="card-accent" style="background:linear-gradient(90deg,var(--gold),#ff9900)"></div><div class="card-glow"></div>
+      <div class="card-ico">🔢</div>
       <div class="card-body">
-        <div class="card-name">Racing</div>
-        <div class="card-desc">Top-down track racing. WASD vs arrows. 3 laps — first to finish wins.</div>
-        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag trt">Real-time</span></div>
+        <div class="card-name">2048</div>
+        <div class="card-desc">Slide tiles, merge numbers, reach 2048. Swipe on mobile or arrow keys on desktop.</div>
+        <div class="card-tags"><span class="tag tsolo">Solo</span><span class="tag ttr">Puzzle</span><span class="tag tmob">Swipe</span></div>
         <span class="play">Play Now →</span>
       </div>
     </a>
 
-    <a class="card" href="games/sword.html">
-      <div class="card-accent"></div><div class="card-glow"></div>
-      <div class="card-ico">⚔️</div>
+    <a class="card" href="tetris.html">
+      <div class="card-accent" style="background:linear-gradient(90deg,var(--cyan),var(--magenta))"></div><div class="card-glow"></div>
+      <div class="card-ico">🟦</div>
       <div class="card-body">
-        <div class="card-name">Sword Duels</div>
-        <div class="card-desc">Side-scroll blade combat. Move, jump, attack, block. Drain opponent's HP.</div>
-        <div class="card-tags"><span class="tag t2p">2 Player</span><span class="tag trt">Real-time</span></div>
+        <div class="card-name">Tetris</div>
+        <div class="card-desc">Classic falling blocks with ghost piece, hold, wall kicks, and levels. Beat your high score!</div>
+        <div class="card-tags"><span class="tag tsolo">Solo</span><span class="tag trt">Real-time</span><span class="tag tmob">Touch</span></div>
+        <span class="play">Play Now →</span>
+      </div>
+    </a>
+
+    <a class="card" href="slingshot.html">
+      <div class="card-accent" style="background:linear-gradient(90deg,#ff6600,#ff0000)"></div><div class="card-glow"></div>
+      <div class="card-ico">🐦</div>
+      <div class="card-body">
+        <div class="card-name">Slingshot</div>
+        <div class="card-desc">Angry Birds-style physics! Launch birds at pig fortresses. 5 levels, 3 bird types!</div>
+        <div class="card-tags"><span class="tag tsolo">Solo</span><span class="tag trt">Physics</span><span class="tag tmob">Drag</span></div>
         <span class="play">Play Now →</span>
       </div>
     </a>
@@ -270,18 +506,291 @@ footer{border-top:1px solid var(--border);padding:2rem 0;
 </footer>
 
 <script>
-// Starfield
+// ═══════════════════════════════════════════════════════
+//  STARFIELD BACKGROUND
+// ═══════════════════════════════════════════════════════
 (function(){
   const c=document.getElementById('bg'),ctx=c.getContext('2d');
   let stars=[];
   function resize(){c.width=innerWidth;c.height=innerHeight;}
-  function init(){stars=Array.from({length:160},()=>({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.3+.2,a:Math.random(),s:Math.random()*.004+.001,d:Math.random()>.5?1:-1}));}
-  function draw(){ctx.clearRect(0,0,c.width,c.height);stars.forEach(s=>{s.a+=s.s*s.d;if(s.a>1||s.a<0)s.d*=-1;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle=`rgba(0,245,255,${s.a*.6})`;ctx.fill();});requestAnimationFrame(draw);}
+  function init(){
+    stars=Array.from({length:180},()=>({
+      x:Math.random()*c.width,y:Math.random()*c.height,
+      r:Math.random()*1.4+.2,a:Math.random(),
+      s:Math.random()*.004+.001,d:Math.random()>.5?1:-1
+    }));
+  }
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    stars.forEach(s=>{
+      s.a+=s.s*s.d;
+      if(s.a>1||s.a<0)s.d*=-1;
+      ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(0,245,255,${s.a*.55})`;ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
   window.addEventListener('resize',()=>{resize();init();});
   resize();init();draw();
 })();
-// Stagger card animations
-document.querySelectorAll('.card').forEach((c,i)=>{c.style.animationDelay=i*.04+'s';});
+
+// ═══════════════════════════════════════════════════════
+//  MAC DOCK CAROUSEL DATA
+// ═══════════════════════════════════════════════════════
+const GAMES=[
+  {ico:'🏓',name:'Ping Pong',href:'pingpong (1).html',desc:'Spin-physics pong with AI & 2P modes. First to 7 wins.',tags:['2 Player','AI Mode','Real-time','Touch']},
+  {ico:'🏒',name:'Air Hockey',href:'airhockey.html',desc:'Frictionless puck — smash it into the net. Full touch support.',tags:['2 Player','Real-time','Touch']},
+  {ico:'🐍',name:'Snakes',href:'snakes.html',desc:'Two snakes battle it out on one grid. Eat, grow, trap.',tags:['2 Player','Real-time','Touch']},
+  {ico:'🤼',name:'Sumo',href:'sumo.html',desc:'Physics push-out combat on a circular ring. Best of 5.',tags:['2 Player','Real-time','Touch']},
+  {ico:'🏎️',name:'Racing',href:'racing.html',desc:'Top-down track racing. 3 laps, first across the line wins.',tags:['2 Player','Real-time','Touch']},
+  {ico:'⚔️',name:'Sword Duels',href:'sword.html',desc:'Side-scrolling blade fighter. Attack, block, jump. Best of 3 rounds.',tags:['2 Player','AI Mode','Touch']},
+  {ico:'💣',name:'Bomberman',href:'bomberman.html',desc:'Destroy walls, chain explosions, power-ups, eliminate opponent.',tags:['2 Player','Real-time','Touch']},
+  {ico:'🛡️',name:'Tank Battle',href:'tanks.html',desc:'Wall-bouncing bullets, shield respawn, 3 lives each. Tank war!',tags:['2 Player','Real-time','Touch']},
+  {ico:'🎮',name:'3D Pong',href:'pong3d.html',desc:'Three.js neon tunnel pong. Online rooms via 4-digit code!',tags:['3D','Online','AI Mode','Touch']},
+  {ico:'⭕',name:'Tic Tac Toe',href:'tictactoe (1).html',desc:'Unbeatable Minimax AI or pass-and-play with a friend.',tags:['2 Player','AI Mode','Turn-based']},
+  {ico:'♟️',name:'Chess',href:'chess (1).html',desc:'Full rules chess — castling, en passant, promotion. AI included.',tags:['2 Player','AI Mode','Turn-based']},
+  {ico:'🎱',name:'Pool',href:'pool.html',desc:'8-ball billiards. Drag to aim. Sink solids or stripes then the 8.',tags:['2 Player','Turn-based']},
+  {ico:'⚽',name:'Penalty Kicks',href:'penalty.html',desc:'5 penalty kicks each. Most goals wins. AI goalkeeper mode.',tags:['2 Player','AI Mode','Turn-based']},
+  {ico:'⛳',name:'Minigolf',href:'minigolf.html',desc:'9-hole minigolf. Drag to aim, bounce off walls, fewest strokes.',tags:['2 Player','Turn-based']},
+  {ico:'🔢',name:'2048',href:'game2048.html',desc:'Slide & merge tiles to reach 2048. Full swipe gesture support.',tags:['Solo','Puzzle','Swipe']},
+  {ico:'🟦',name:'Tetris',href:'tetris.html',desc:'Ghost piece, hold, wall kicks, levels, high score localStorage.',tags:['Solo','Real-time','Touch']},
+  {ico:'🐦',name:'Slingshot',href:'slingshot.html',desc:'Angry Birds physics! 5 levels, 3 bird types, real destruction.',tags:['Solo','Physics','Drag']},
+];
+
+const TAG_COLORS={
+  '2 Player':'#00ff88','AI Mode':'#ff00aa','Real-time':'#ff6600',
+  'Turn-based':'#00f5ff','Online':'#ffd700','Solo':'#8888ff',
+  '3D':'#ff66ff','Touch':'#44ff88','Physics':'#ff6600',
+  'Swipe':'#44ff88','Drag':'#44ff88','Puzzle':'#00f5ff',
+};
+
+// ═══════════════════════════════════════════════════════
+//  BUILD DOCK
+// ═══════════════════════════════════════════════════════
+const track = document.getElementById('dockTrack');
+let activeIdx = 0;
+let previewOpen = false;
+
+GAMES.forEach((g,i)=>{
+  const el=document.createElement('div');
+  el.className='dock-item';
+  el.setAttribute('tabindex','0');
+  el.setAttribute('role','button');
+  el.setAttribute('aria-label',g.name);
+  el.dataset.idx=i;
+  el.innerHTML=`
+    <div class="dock-ico">${g.ico}</div>
+    <div class="dock-name">${g.name}</div>
+    <div class="dock-dot"></div>`;
+  el.addEventListener('click',()=>selectGame(i, true));
+  el.addEventListener('keydown',e=>{if(e.key==='Enter')window.location.href=g.href;});
+  track.appendChild(el);
+});
+
+function getItems(){ return Array.from(track.querySelectorAll('.dock-item')); }
+
+// ─── Magnification + centre snap ───────────────────────
+function selectGame(idx, toggle){
+  const wasActive = activeIdx === idx && previewOpen;
+  activeIdx=Math.max(0,Math.min(GAMES.length-1,idx));
+
+  // Preview panel
+  if(toggle && wasActive){
+    closePreview();
+  } else {
+    openPreview(activeIdx);
+  }
+
+  updateDockState();
+  centreOnActive();
+}
+
+function updateDockState(){
+  getItems().forEach((el,i)=>{
+    el.classList.remove('active','near-1','near-2');
+    const d=Math.abs(i-activeIdx);
+    if(d===0) el.classList.add('active');
+    else if(d===1) el.classList.add('near-2');
+    else if(d===2) el.classList.add('near-1');
+  });
+}
+
+function centreOnActive(){
+  const items=getItems();
+  if(!items.length) return;
+  const el=items[activeIdx];
+  const trackRect=track.parentElement.getBoundingClientRect();
+  const elRect=el.getBoundingClientRect();
+  const elCentre=elRect.left+elRect.width/2;
+  const viewCentre=trackRect.left+trackRect.width/2;
+  const diff=elCentre-viewCentre;
+  // Animate the track scroll
+  track.style.transition='transform .35s cubic-bezier(.25,.46,.45,.94)';
+  currentTranslate-=diff;
+  track.style.transform=`translateX(${currentTranslate}px)`;
+}
+
+// ─── Preview panel ──────────────────────────────────────
+function openPreview(idx){
+  const g=GAMES[idx];
+  document.getElementById('dpIco').textContent=g.ico;
+  document.getElementById('dpName').textContent=g.name;
+  document.getElementById('dpDesc').textContent=g.desc;
+  document.getElementById('dpBtn').href=g.href;
+
+  const tagsEl=document.getElementById('dpTags');
+  tagsEl.innerHTML='';
+  g.tags.forEach(t=>{
+    const s=document.createElement('span');
+    s.className='tag';
+    s.style.borderColor=TAG_COLORS[t]||'#aaa';
+    s.style.color=TAG_COLORS[t]||'#aaa';
+    s.textContent=t;
+    tagsEl.appendChild(s);
+  });
+
+  document.getElementById('dockPreview').classList.add('open');
+  previewOpen=true;
+}
+function closePreview(){
+  document.getElementById('dockPreview').classList.remove('open');
+  previewOpen=false;
+}
+
+// ═══════════════════════════════════════════════════════
+//  DRAG SCROLL
+// ═══════════════════════════════════════════════════════
+let isDragging=false, dragStartX=0, dragStartTranslate=0;
+let currentTranslate=0, velocityX=0, lastDragX=0, lastDragTime=0;
+let dragThreshold=5, didDrag=false;
+
+const dockWrap=document.getElementById('dockWrap');
+
+dockWrap.addEventListener('mousedown',dragStart);
+dockWrap.addEventListener('touchstart',e=>dragStart(e.touches[0]),{passive:true});
+window.addEventListener('mousemove',dragMove);
+window.addEventListener('touchmove',e=>dragMove(e.touches[0]),{passive:false});
+window.addEventListener('mouseup',dragEnd);
+window.addEventListener('touchend',dragEnd);
+
+function dragStart(e){
+  isDragging=true;didDrag=false;
+  dragStartX=e.clientX;
+  dragStartTranslate=currentTranslate;
+  velocityX=0; lastDragX=e.clientX; lastDragTime=Date.now();
+  track.style.transition='none';
+  dockWrap.style.cursor='grabbing';
+}
+
+function dragMove(e){
+  if(!isDragging) return;
+  const dx=e.clientX-dragStartX;
+  if(Math.abs(dx)>dragThreshold) didDrag=true;
+  currentTranslate=dragStartTranslate+dx;
+  track.style.transform=`translateX(${currentTranslate}px)`;
+
+  const now=Date.now();
+  velocityX=(e.clientX-lastDragX)/(now-lastDragTime||1);
+  lastDragX=e.clientX; lastDragTime=now;
+}
+
+function dragEnd(){
+  if(!isDragging) return;
+  isDragging=false;
+  dockWrap.style.cursor='grab';
+
+  if(!didDrag) return; // was a click — handled by click listener
+
+  // Momentum flick
+  track.style.transition='transform .4s cubic-bezier(.25,.46,.45,.94)';
+  currentTranslate+=velocityX*120;
+  track.style.transform=`translateX(${currentTranslate}px)`;
+
+  // Snap to nearest item after momentum
+  setTimeout(snapToNearest, 420);
+}
+
+function snapToNearest(){
+  // Find which item is closest to centre
+  const trackRect=dockWrap.getBoundingClientRect();
+  const viewCentre=trackRect.left+trackRect.width/2;
+  const items=getItems();
+  let bestIdx=0, bestDist=Infinity;
+  items.forEach((el,i)=>{
+    const r=el.getBoundingClientRect();
+    const c=r.left+r.width/2;
+    const d=Math.abs(c-viewCentre);
+    if(d<bestDist){bestDist=d;bestIdx=i;}
+  });
+  activeIdx=bestIdx;
+  updateDockState();
+  centreOnActive();
+  openPreview(activeIdx);
+}
+
+// ═══════════════════════════════════════════════════════
+//  KEYBOARD NAVIGATION
+// ═══════════════════════════════════════════════════════
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft'){e.preventDefault();selectGame(activeIdx-1,false);openPreview(activeIdx);}
+  if(e.key==='ArrowRight'){e.preventDefault();selectGame(activeIdx+1,false);openPreview(activeIdx);}
+  if(e.key==='Enter'&&previewOpen){
+    window.location.href=GAMES[activeIdx].href;
+  }
+  if(e.key==='Escape') closePreview();
+});
+
+// ═══════════════════════════════════════════════════════
+//  TOUCH SWIPE ON DOCK (mobile swipe = next/prev)
+// ═══════════════════════════════════════════════════════
+let swipeStartX=0;
+dockWrap.addEventListener('touchstart',e=>{ swipeStartX=e.touches[0].clientX; },{passive:true});
+dockWrap.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-swipeStartX;
+  if(Math.abs(dx)<30) return; // too small
+  if(dx<0) selectGame(activeIdx+1,false);
+  else selectGame(activeIdx-1,false);
+  openPreview(activeIdx);
+},{passive:true});
+
+// ═══════════════════════════════════════════════════════
+//  MOUSE HOVER MAGNIFICATION (continuous cursor proximity)
+// ═══════════════════════════════════════════════════════
+dockWrap.addEventListener('mousemove',e=>{
+  if(isDragging) return;
+  const items=getItems();
+  const cursor=e.clientX;
+  items.forEach((el,i)=>{
+    const r=el.getBoundingClientRect();
+    const centre=r.left+r.width/2;
+    const dist=Math.abs(cursor-centre);
+    // Smooth scale based on proximity
+    const RANGE=130;
+    if(i===activeIdx) return; // active always big
+    if(dist<RANGE){
+      const t=1-dist/RANGE;
+      const scale=1+t*.35;
+      el.querySelector('.dock-ico').style.transform=`scale(${scale})`;
+    } else {
+      el.querySelector('.dock-ico').style.transform='scale(1)';
+    }
+  });
+});
+dockWrap.addEventListener('mouseleave',()=>{
+  getItems().forEach(el=>el.querySelector('.dock-ico').style.transform='');
+});
+
+// ═══════════════════════════════════════════════════════
+//  BOOT: select first item after layout settles
+// ═══════════════════════════════════════════════════════
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    selectGame(0,false);
+    openPreview(0);
+  },200);
+  // Stagger card animations
+  document.querySelectorAll('.card').forEach((c,i)=>{c.style.animationDelay=i*.035+'s';});
+});
 </script>
 </body>
 </html>

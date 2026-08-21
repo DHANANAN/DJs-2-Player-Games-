@@ -160,14 +160,15 @@
 <body>
 
 <nav class="top-nav">
-  <a href="../index.html" class="back">← Hub</a>
+  <a href="index.html" class="back">← Hub</a>
   <span class="game-title">Chess</span>
   <span style="width:80px"></span>
 </nav>
 
 <div class="mode-row">
-  <button class="mode-btn active" id="btn2p" onclick="setMode('2p')">👥 Pass & Play</button>
-  <button class="mode-btn" id="btnAI" onclick="setMode('ai')">🤖 vs AI</button>
+  <button class="mode-btn" id="btn2p" onclick="setMode('2p')">👥 2 Player</button>
+  <button class="mode-btn active" id="btnFAI" onclick="setMode('fai')">💚 vs FAI (Easy)</button>
+  <button class="mode-btn" id="btnHAI" onclick="setMode('hai')">🔥 vs HAI (Pro)</button>
 </div>
 
 <div class="status-bar">
@@ -641,8 +642,18 @@ function minimaxChess(b, depth, alpha, beta, maximizing, ep, cast) {
 }
 
 function aiMove() {
-  const result = minimaxChess(board, 2, -Infinity, Infinity, true, enPassant, castling);
-  if (result.move) executeMove(result.move);
+  if (gameMode === 'fai') {
+    // FAI: Friendly AI - random legal move or basic capture
+    const allMoves = getAllLegalMoves(board, 'b', enPassant, castling);
+    if (!allMoves.length) return;
+    const captureMove = allMoves.find(m => board[m.r][m.c] !== null);
+    const chosen = (captureMove && Math.random() < 0.4) ? captureMove : allMoves[Math.floor(Math.random() * allMoves.length)];
+    executeMove(chosen);
+  } else {
+    // HAI: Minimax depth 2 with piece-square table evaluation
+    const result = minimaxChess(board, 2, -Infinity, Infinity, true, enPassant, castling);
+    if (result.move) executeMove(result.move);
+  }
 }
 
 // ── UI UPDATES ─────────────────────────────
@@ -673,14 +684,16 @@ function undoMove() {
 
 function setMode(m) {
   gameMode = m;
-  document.getElementById('btn2p').classList.toggle('active',m==='2p');
-  document.getElementById('btnAI').classList.toggle('active', m==='ai');
-  document.getElementById('modeLabel').textContent = m==='ai' ? 'You = White · AI = Black' : 'Pass & Play';
+  document.getElementById('btn2p').classList.toggle('active', m==='2p');
+  document.getElementById('btnFAI').classList.toggle('active', m==='fai');
+  document.getElementById('btnHAI').classList.toggle('active', m==='hai');
+  const lbl = m==='2p' ? 'Pass & Play' : (m==='fai' ? 'You = White · FAI Bot = Black' : 'You = White · HAI Master = Black');
+  document.getElementById('modeLabel').textContent = lbl;
   newGame();
 }
 
 // ── INIT ───────────────────────────────────
-gameMode = '2p';
+gameMode = 'fai';
 newGame();
 </script>
 </body>

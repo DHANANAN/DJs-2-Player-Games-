@@ -13,87 +13,104 @@ body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;
   padding:.7rem .5rem;overflow-x:hidden;touch-action:none;}
 body::before{content:'';position:fixed;inset:0;z-index:999;
   background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;}
-.nav{width:100%;max-width:700px;display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;}
+.nav{width:100%;max-width:700px;display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;}
 .back{font-family:'Orbitron',sans-serif;font-size:.6rem;font-weight:700;color:var(--dim);
   text-decoration:none;border:1px solid var(--dim);padding:.4rem .8rem;letter-spacing:.1em;transition:all .3s;}
 .back:hover{color:var(--cyan);border-color:var(--cyan);}
 .title{font-family:'Press Start 2P',monospace;font-size:.8rem;color:var(--green);text-shadow:0 0 18px rgba(0,255,136,.6);}
-.hud{width:100%;max-width:700px;display:grid;grid-template-columns:1fr auto 1fr;margin-bottom:.6rem;}
+
+/* MODES */
+.mode-row{display:flex;gap:.5rem;margin-bottom:.5rem;flex-wrap:wrap;justify-content:center;}
+.m-btn{
+  font-family:'Orbitron',sans-serif;font-size:.58rem;font-weight:700;
+  letter-spacing:.1em;padding:.4rem .9rem;background:transparent;color:var(--dim);
+  border:1px solid var(--dim);cursor:pointer;transition:all .25s;
+}
+.m-btn.active{background:var(--green);color:var(--bg);border-color:var(--green);box-shadow:0 0 16px rgba(0,255,136,.4);}
+.m-btn.fai.active{background:var(--cyan);border-color:var(--cyan);box-shadow:0 0 16px rgba(0,245,255,.4);}
+.m-btn.hai.active{background:var(--magenta);border-color:var(--magenta);box-shadow:0 0 16px rgba(255,0,170,.4);}
+
+.hud{width:100%;max-width:700px;display:grid;grid-template-columns:1fr auto 1fr;margin-bottom:.5rem;}
 .sb{text-align:center;padding:.5rem;border:1px solid var(--border);background:var(--panel);}
 .sb+.sb{border-left:none;}
 .sn{font-family:'Orbitron',sans-serif;font-size:1.6rem;font-weight:900;}
-.sn.p1{color:var(--cyan);}.sn.p2{color:var(--magenta);}.sn.mid{color:var(--dim);font-size:1rem;line-height:1.8;}
+.sn.p1{color:var(--cyan);}.sn.p2{color:var(--magenta);}.sn.mid{color:var(--dim);font-size:.8rem;line-height:2;}
 .sl{font-family:'Orbitron',sans-serif;font-size:.45rem;color:var(--dim);letter-spacing:.1em;}
-.cw{position:relative;width:min(700px,98vw);border:1px solid var(--border);background:#010108;margin-bottom:.6rem;}
+
+.cw{position:relative;width:min(700px,98vw);border:1px solid var(--border);background:#010108;margin-bottom:.5rem;touch-action:none;}
 .cw::before{content:'';position:absolute;inset:-2px;background:linear-gradient(135deg,var(--green),var(--cyan));z-index:-1;opacity:.4;}
-canvas{display:block;width:100%;}
-.ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,4,13,.92);z-index:20;}
+canvas{display:block;width:100%;touch-action:none;}
+
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,4,13,.92);z-index:20;padding:1rem;}
 .ov.h{display:none;}
 .ot{font-family:'Press Start 2P',monospace;font-size:clamp(.85rem,3.5vw,1.4rem);color:var(--gold);text-shadow:0 0 28px rgba(255,215,0,.7);text-align:center;margin-bottom:.6rem;}
-.os{font-family:'Orbitron',sans-serif;font-size:.55rem;color:var(--dim);letter-spacing:.1em;margin-bottom:1.1rem;text-align:center;line-height:2.}
+.os{font-family:'Orbitron',sans-serif;font-size:.55rem;color:var(--dim);letter-spacing:.1em;margin-bottom:1.1rem;text-align:center;line-height:1.8;}
 .ob{font-family:'Orbitron',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.2em;padding:.7rem 1.8rem;background:var(--green);color:var(--bg);border:none;cursor:pointer;transition:all .25s;}
 .ob:hover{background:#fff;}
 
-/* Virtual D-pads */
-.vpad-wrap{position:fixed;bottom:0;left:0;right:0;pointer-events:none;z-index:1000;
-  display:flex;justify-content:space-between;padding:0 .5rem .8rem;}
-.vpad{pointer-events:all;position:relative;width:140px;height:140px;}
-.vbtn{position:absolute;width:44px;height:44px;background:rgba(0,245,255,.12);border:2px solid rgba(0,245,255,.35);
-  color:var(--cyan);font-size:1.1rem;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer;transition:background .1s;}
-.vbtn:active,.vbtn.pressed{background:rgba(0,245,255,.4);}
-.vup{top:0;left:48px;}.vdown{bottom:0;left:48px;}.vleft{left:0;top:48px;}.vright{right:0;top:48px;}
-.v-fire{position:absolute;bottom:10px;right:10px;width:50px;height:50px;border-radius:50%;
-  background:rgba(255,100,0,.2);border:2px solid rgba(255,100,0,.6);color:#ff9900;
-  font-size:1.3rem;display:flex;align-items:center;justify-content:center;
-  touch-action:none;user-select:none;-webkit-user-select:none;pointer-events:all;cursor:pointer;}
-.v-fire:active,.v-fire.pressed{background:rgba(255,100,0,.5);}
-.vpad2{pointer-events:all;position:relative;width:190px;height:140px;}
-@media(pointer:fine){.vpad-wrap{display:none!important;}}
+/* Touch Controls */
+.touch-bar{width:100%;max-width:700px;display:flex;justify-content:space-between;gap:1rem;margin-bottom:.5rem;}
+.v-dpad{display:grid;grid-template-columns:44px 44px 44px;grid-template-rows:44px 44px;gap:4px;}
+.v-btn{
+  background:rgba(0,245,255,0.15);border:1.5px solid rgba(0,245,255,0.4);
+  color:var(--cyan);font-size:1.1rem;border-radius:8px;display:flex;
+  align-items:center;justify-content:center;touch-action:none;user-select:none;cursor:pointer;
+}
+.v-btn:active{background:rgba(0,245,255,0.5);}
+.v-fire{
+  padding:.8rem 1.8rem;border-radius:12px;background:rgba(255,100,0,0.2);
+  border:2px solid #ff6600;color:#ff9900;font-family:'Orbitron',sans-serif;
+  font-weight:900;font-size:.85rem;display:flex;align-items:center;justify-content:center;
+  touch-action:none;user-select:none;cursor:pointer;
+}
+.v-fire:active{background:rgba(255,100,0,0.6);}
 </style>
 </head>
 <body>
 <nav class="nav"><a href="index.html" class="back">← Hub</a><span class="title">🛡️ Tank Battle</span><span style="width:70px"></span></nav>
-<div class="hud">
-  <div class="sb"><div class="sn p1" id="s1">3</div><div class="sl">P1 Lives</div></div>
-  <div class="sb"><div class="sn mid">VS</div><div class="sl">Best of 5</div></div>
-  <div class="sb"><div class="sn p2" id="s2">3</div><div class="sl">P2 Lives</div></div>
+
+<div class="mode-row">
+  <button class="m-btn fai active" id="mFAI" onclick="setMode('fai')">💚 vs FAI (Easy Tank)</button>
+  <button class="m-btn hai" id="mHAI" onclick="setMode('hai')">🔥 vs HAI (Tank Master)</button>
+  <button class="m-btn" id="m2P" onclick="setMode('2p')">👥 Local 2P</button>
 </div>
+
+<div class="hud">
+  <div class="sb"><div class="sn p1" id="s1">3</div><div class="sl" id="lblP1">P1 (You) Lives</div></div>
+  <div class="sb"><div class="sn mid">VS</div><div class="sl">First to 3 Kills</div></div>
+  <div class="sb"><div class="sn p2" id="s2">3</div><div class="sl" id="lblP2">FAI Tank</div></div>
+</div>
+
 <div class="cw" id="cw"><canvas id="c"></canvas>
   <div class="ov" id="ov">
     <div class="ot">🛡️ TANK BATTLE</div>
-    <div class="os">Destroy enemy tank · 3 lives each<br>P1: WASD move · F shoot<br>P2: Arrows move · L shoot</div>
+    <div class="os">Destroy enemy tank · 3 lives each · Wall-bouncing shells<br>P1: WASD move · F shoot (or touch controls)</div>
     <button class="ob" onclick="startGame()">BATTLE START!</button>
   </div>
 </div>
-<div class="vpad-wrap">
-  <div class="vpad" id="vpad1">
-    <button class="vbtn vup" id="v1u">▲</button><button class="vbtn vleft" id="v1l">◀</button>
-    <button class="vbtn vright" id="v1r">▶</button><button class="vbtn vdown" id="v1d">▼</button>
-    <button class="v-fire" id="v1f">💥</button>
+
+<div class="touch-bar">
+  <div class="v-dpad">
+    <div></div><button class="v-btn" id="vU">▲</button><div></div>
+    <button class="v-btn" id="vL">◀</button><button class="v-btn" id="vD">▼</button><button class="v-btn" id="vR">▶</button>
   </div>
-  <div class="vpad2" id="vpad2">
-    <button class="v-fire" style="position:absolute;bottom:10px;left:10px;pointer-events:all;" id="v2f">💥</button>
-    <button class="vbtn vup" style="top:0;right:48px;position:absolute;" id="v2u">▲</button>
-    <button class="vbtn vleft" style="left:46px;top:48px;position:absolute;" id="v2l">◀</button>
-    <button class="vbtn vright" style="right:0;top:48px;position:absolute;" id="v2r">▶</button>
-    <button class="vbtn vdown" style="bottom:0;right:48px;position:absolute;" id="v2d">▼</button>
-  </div>
+  <button class="v-fire" id="vF">💥 FIRE CANNON</button>
 </div>
+
 <script>
-const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
-let W,H;
+const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
+let W, H;
 const CELL=28, COLS=25, ROWS=18;
 canvas.width=COLS*CELL; canvas.height=ROWS*CELL;
 W=canvas.width; H=canvas.height;
 document.getElementById('cw').style.width=W+'px';
 
 const keys={};
-let tanks,bullets=[],walls=[],powerups=[];
-let lives=[3,3],running=false,animId=null,lastShot=[0,0];
+let tanks=[], bullets=[], walls=[], powerups=[], explosions=[];
+let lives=[3,3], running=false, animId=null;
+let mode='fai'; // 'fai', 'hai', '2p'
 
 const MAPS=[
-  // Map 1
   [
     '1111111111111111111111111',
     '1.....................1..1',
@@ -125,172 +142,26 @@ function buildWalls(){
 }
 
 function mkTank(col,row,angle,color,glow,idx){
-  return{x:col*CELL+CELL/2,y:row*CELL+CELL/2,angle,color,glow,idx,
-    vx:0,vy:0,speed:2.8,alive:true,shootCd:0,
-    shield:0,rapid:0};
+  return{
+    x:col*CELL+CELL/2, y:row*CELL+CELL/2, angle,
+    color, glow, idx, speed:2.8, alive:true,
+    shootCd:0, shield:0
+  };
 }
 
 function initTanks(){
   tanks=[
     mkTank(2,8,0,'#00f5ff','rgba(0,245,255,.7)',0),
-    mkTank(22,8,Math.PI,'#ff00aa','rgba(255,0,170,.7)',1)
+    mkTank(22,8,Math.PI,mode==='fai'?'#00ff88':'#ff00aa','rgba(255,0,170,.7)',1)
   ];
+  bullets=[]; explosions=[];
 }
 
 function wallAt(px,py,margin=10){
   return walls.some(w=>{
-    const wx=w.x*CELL,wy=w.y*CELL;
+    const wx=w.x*CELL, wy=w.y*CELL;
     return px-margin<wx+CELL&&px+margin>wx&&py-margin<wy+CELL&&py+margin>wy;
   });
-}
-
-function updateTank(t,fwd,bk,left,right,shoot){
-  if(!t.alive||!running) return;
-  if(t.shootCd>0) t.shootCd--;
-  const spd=t.speed*(t.rapid>0?0.8:1);
-  if(keys[fwd]){ const nx=t.x+Math.cos(t.angle)*spd,ny=t.y+Math.sin(t.angle)*spd; if(!wallAt(nx,ny)){t.x=nx;t.y=ny;}}
-  if(keys[bk]){ const nx=t.x-Math.cos(t.angle)*spd*.7,ny=t.y-Math.sin(t.angle)*spd*.7; if(!wallAt(nx,ny)){t.x=nx;t.y=ny;}}
-  if(keys[left]) t.angle-=0.04;
-  if(keys[right]) t.angle+=0.04;
-  if(keys[shoot]&&t.shootCd<=0){
-    shoot_bullet(t);
-    t.shootCd=t.rapid>0?10:25;
-  }
-  t.rapid=Math.max(0,t.rapid-1);
-  t.shield=Math.max(0,t.shield-1);
-  // Clamp in bounds
-  t.x=Math.max(CELL*.8,Math.min(W-CELL*.8,t.x));
-  t.y=Math.max(CELL*.8,Math.min(H-CELL*.8,t.y));
-}
-
-function shoot_bullet(t){
-  bullets.push({x:t.x+Math.cos(t.angle)*22,y:t.y+Math.sin(t.angle)*22,
-    vx:Math.cos(t.angle)*8,vy:Math.sin(t.angle)*8,owner:t.idx,life:80,r:5});
-}
-
-function updateBullets(){
-  bullets=bullets.filter(b=>{
-    b.x+=b.vx; b.y+=b.vy; b.life--;
-    if(b.life<=0) return false;
-    // Wall bounce
-    if(wallAt(b.x,b.y,b.r)){b.vx*=-1;b.vy*=-1;b.life-=20;return b.life>0;}
-    // Hit tank
-    const hit=tanks.find(t=>t.alive&&t.idx!==b.owner&&Math.hypot(t.x-b.x,t.y-b.y)<18);
-    if(hit){
-      if(hit.shield>0){ hit.shield=0; return false; }
-      hitTank(hit); return false;
-    }
-    return true;
-  });
-}
-
-function hitTank(t){
-  t.alive=false;
-  lives[t.idx]--;
-  document.getElementById(`s${t.idx+1}`).textContent=lives[t.idx];
-  spawnExplosion(t.x,t.y);
-  if(lives[t.idx]<=0){ endGame(1-t.idx); return; }
-  setTimeout(()=>{
-    t.alive=true;
-    t.x=t.idx===0?2*CELL+CELL/2:22*CELL+CELL/2;
-    t.y=8*CELL+CELL/2;
-    t.angle=t.idx===0?0:Math.PI;
-    t.shield=180;
-  },1200);
-}
-
-let explosions=[];
-function spawnExplosion(x,y){
-  explosions.push({x,y,r:5,max:35,t:0});
-}
-
-function draw(){
-  ctx.fillStyle='#010108'; ctx.fillRect(0,0,W,H);
-  // Floor grid
-  ctx.strokeStyle='rgba(0,245,255,.04)'; ctx.lineWidth=1;
-  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
-    ctx.strokeRect(c*CELL,r*CELL,CELL,CELL);
-  }
-  // Walls
-  walls.forEach(w=>{
-    const x=w.x*CELL,y=w.y*CELL;
-    ctx.fillStyle='#1a2030'; ctx.fillRect(x,y,CELL,CELL);
-    ctx.fillStyle='rgba(0,245,255,.05)'; ctx.fillRect(x+2,y+2,CELL-4,CELL-4);
-    ctx.strokeStyle='rgba(0,245,255,.12)'; ctx.lineWidth=1;
-    ctx.strokeRect(x+.5,y+.5,CELL-1,CELL-1);
-  });
-  // Bullets
-  bullets.forEach(b=>{
-    ctx.shadowColor=b.owner===0?'#00f5ff':'#ff00aa'; ctx.shadowBlur=12;
-    ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
-    ctx.fillStyle=b.owner===0?'#00f5ff':'#ff00aa'; ctx.fill();
-    ctx.shadowBlur=0;
-  });
-  // Explosions
-  explosions=explosions.filter(e=>e.t<e.max);
-  explosions.forEach(e=>{
-    const p=e.t/e.max;
-    ctx.beginPath(); ctx.arc(e.x,e.y,35*p,0,Math.PI*2);
-    ctx.fillStyle=`rgba(255,${Math.floor(150*(1-p))},0,${.8*(1-p)})`; ctx.fill();
-    e.t++;
-  });
-  // Tanks
-  tanks.forEach(t=>{
-    if(!t.alive) return;
-    const flash=t.shield>0&&Math.floor(t.shield/6)%2===0;
-    if(flash) return;
-    ctx.save(); ctx.translate(t.x,t.y); ctx.rotate(t.angle);
-    ctx.shadowColor=t.glow; ctx.shadowBlur=16;
-    // Body
-    ctx.fillStyle=t.color;
-    ctx.fillRect(-13,-9,26,18);
-    // Tread marks
-    ctx.fillStyle='rgba(0,0,0,.4)';
-    ctx.fillRect(-13,-9,26,5); ctx.fillRect(-13,4,26,5);
-    // Turret
-    ctx.beginPath(); ctx.arc(0,0,8,0,Math.PI*2);
-    ctx.fillStyle=t.color; ctx.fill();
-    // Barrel
-    ctx.fillRect(6,-3,18,6);
-    ctx.shadowBlur=0;
-    // Shield indicator
-    if(t.shield>0){
-      ctx.strokeStyle='rgba(255,255,0,.5)'; ctx.lineWidth=2;
-      ctx.beginPath(); ctx.arc(0,0,18,0,Math.PI*2); ctx.stroke();
-    }
-    ctx.restore();
-    // Label
-    ctx.fillStyle=t.color; ctx.font='bold 9px Orbitron,sans-serif';
-    ctx.textAlign='center';
-    ctx.fillText(`P${t.idx+1}`,t.x,t.y-20);
-  });
-}
-
-function loop(){
-  if(!running) return;
-  updateTank(tanks[0],'w','s','a','d','f');
-  updateTank(tanks[1],'ArrowUp','ArrowDown','ArrowLeft','ArrowRight','l');
-  updateBullets();
-  draw();
-  animId=requestAnimationFrame(loop);
-}
-
-function startGame(){
-  lives=[3,3];
-  document.getElementById('s1').textContent='3'; document.getElementById('s2').textContent='3';
-  buildWalls(); initTanks(); bullets=[]; explosions=[];
-  document.getElementById('ov').classList.add('h');
-  running=true;
-  cancelAnimationFrame(animId); loop();
-}
-
-function endGame(winner){
-  running=false;
-  const ov=document.getElementById('ov');
-  ov.classList.remove('h');
-  ov.querySelector('.ot').textContent=`🏆 P${winner+1} WINS!`;
-  ov.querySelector('.os').textContent=`Lives: ${lives[0]} — ${lives[1]}`;
-  ov.querySelector('.ob').textContent='Play Again'; ov.querySelector('.ob').onclick=startGame;
 }
 
 window.addEventListener('keydown',e=>{
@@ -303,24 +174,204 @@ window.addEventListener('keyup',e=>{
   if(e.key.length===1) keys[e.key.toLowerCase()]=false;
 });
 
-function bindBtn(id,onP,onR){
-  const btn=document.getElementById(id); if(!btn) return;
-  btn.addEventListener('touchstart',e=>{e.preventDefault();btn.classList.add('pressed');onP();},{passive:false});
-  btn.addEventListener('touchend',e=>{e.preventDefault();btn.classList.remove('pressed');onR&&onR();},{passive:false});
-  btn.addEventListener('touchcancel',e=>{btn.classList.remove('pressed');onR&&onR();},{passive:false});
+// Touch controls
+function bindTouchBtn(id, key){
+  const el=document.getElementById(id);
+  el.addEventListener('touchstart',e=>{e.preventDefault();keys[key]=true;});
+  el.addEventListener('touchend',e=>{e.preventDefault();keys[key]=false;});
+  el.addEventListener('mousedown',()=>{keys[key]=true;});
 }
-bindBtn('v1u',()=>keys['w']=true,()=>keys['w']=false);
-bindBtn('v1d',()=>keys['s']=true,()=>keys['s']=false);
-bindBtn('v1l',()=>keys['a']=true,()=>keys['a']=false);
-bindBtn('v1r',()=>keys['d']=true,()=>keys['d']=false);
-bindBtn('v1f',()=>keys['f']=true,()=>keys['f']=false);
-bindBtn('v2u',()=>keys['ArrowUp']=true,()=>keys['ArrowUp']=false);
-bindBtn('v2d',()=>keys['ArrowDown']=true,()=>keys['ArrowDown']=false);
-bindBtn('v2l',()=>keys['ArrowLeft']=true,()=>keys['ArrowLeft']=false);
-bindBtn('v2r',()=>keys['ArrowRight']=true,()=>keys['ArrowRight']=false);
-bindBtn('v2f',()=>keys['l']=true,()=>keys['l']=false);
+bindTouchBtn('vU','w'); bindTouchBtn('vD','s'); bindTouchBtn('vL','a'); bindTouchBtn('vR','d');
+bindTouchBtn('vF','f');
+window.addEventListener('mouseup',()=>{ keys['w']=keys['s']=keys['a']=keys['d']=keys['f']=false; });
 
-buildWalls(); draw();
+function updateTank(t, fwd, bk, left, right, shoot){
+  if(!t.alive||!running) return;
+  if(t.shootCd>0) t.shootCd--;
+
+  if(keys[fwd]){
+    const nx=t.x+Math.cos(t.angle)*t.speed, ny=t.y+Math.sin(t.angle)*t.speed;
+    if(!wallAt(nx,ny)){ t.x=nx; t.y=ny; }
+  }
+  if(keys[bk]){
+    const nx=t.x-Math.cos(t.angle)*t.speed*0.7, ny=t.y-Math.sin(t.angle)*t.speed*0.7;
+    if(!wallAt(nx,ny)){ t.x=nx; t.y=ny; }
+  }
+  if(keys[left]) t.angle-=0.05;
+  if(keys[right]) t.angle+=0.05;
+
+  if(keys[shoot] && t.shootCd<=0){
+    shoot_bullet(t);
+    t.shootCd=22;
+  }
+  t.shield=Math.max(0, t.shield-1);
+}
+
+function updateTankAI(t){
+  if(!t.alive||!running) return;
+  if(t.shootCd>0) t.shootCd--;
+
+  const target=tanks[0];
+  const dx=target.x - t.x, dy=target.y - t.y;
+  const targetAngle=Math.atan2(dy, dx);
+  let angleDiff=targetAngle - t.angle;
+  while(angleDiff < -Math.PI) angleDiff += Math.PI*2;
+  while(angleDiff > Math.PI) angleDiff -= Math.PI*2;
+
+  // Turn toward player
+  t.angle += Math.sign(angleDiff) * 0.04;
+
+  if(mode==='hai'){
+    // HAI: actively approaches and fires directly
+    const nx=t.x+Math.cos(t.angle)*t.speed*0.8, ny=t.y+Math.sin(t.angle)*t.speed*0.8;
+    if(!wallAt(nx,ny)){ t.x=nx; t.y=ny; }
+    if(Math.abs(angleDiff)<0.25 && t.shootCd<=0){
+      shoot_bullet(t);
+      t.shootCd=28;
+    }
+  } else {
+    // FAI: slow random maneuvers, fires occasionally
+    if(Math.random()<0.3){
+      const nx=t.x+Math.cos(t.angle)*t.speed*0.5, ny=t.y+Math.sin(t.angle)*t.speed*0.5;
+      if(!wallAt(nx,ny)){ t.x=nx; t.y=ny; }
+    }
+    if(Math.random()<0.015 && t.shootCd<=0){
+      shoot_bullet(t);
+      t.shootCd=45;
+    }
+  }
+}
+
+function shoot_bullet(t){
+  bullets.push({
+    x:t.x+Math.cos(t.angle)*22, y:t.y+Math.sin(t.angle)*22,
+    vx:Math.cos(t.angle)*7.5, vy:Math.sin(t.angle)*7.5,
+    owner:t.idx, life:80, r:4
+  });
+}
+
+function updateBullets(){
+  bullets=bullets.filter(b=>{
+    b.x+=b.vx; b.y+=b.vy; b.life--;
+    if(b.life<=0) return false;
+    // Wall bounce
+    if(wallAt(b.x,b.y,b.r)){ b.vx*=-1; b.vy*=-1; b.life-=20; return b.life>0; }
+    // Hit tank
+    const hit=tanks.find(t=>t.alive && t.idx!==b.owner && Math.hypot(t.x-b.x, t.y-b.y)<18);
+    if(hit){
+      hitTank(hit);
+      return false;
+    }
+    return true;
+  });
+}
+
+function hitTank(t){
+  t.alive=false;
+  lives[t.idx]--;
+  document.getElementById(`s${t.idx+1}`).textContent=lives[t.idx];
+  spawnExplosion(t.x,t.y);
+  if(lives[t.idx]<=0){
+    endGame(1-t.idx);
+    return;
+  }
+  setTimeout(()=>{
+    t.alive=true;
+    t.x=t.idx===0?2*CELL+CELL/2:22*CELL+CELL/2;
+    t.y=8*CELL+CELL/2;
+    t.angle=t.idx===0?0:Math.PI;
+    t.shield=120;
+  },1200);
+}
+
+function spawnExplosion(x,y){
+  explosions.push({x,y,t:0,max:30});
+}
+
+function draw(){
+  ctx.fillStyle='#010108'; ctx.fillRect(0,0,W,H);
+  // Grid
+  ctx.strokeStyle='rgba(0,245,255,.04)'; ctx.lineWidth=1;
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    ctx.strokeRect(c*CELL,r*CELL,CELL,CELL);
+  }
+  // Walls
+  walls.forEach(w=>{
+    const x=w.x*CELL, y=w.y*CELL;
+    ctx.fillStyle='#1e293b'; ctx.fillRect(x,y,CELL,CELL);
+    ctx.strokeStyle='#334155'; ctx.lineWidth=1; ctx.strokeRect(x+.5,y+.5,CELL-1,CELL-1);
+  });
+  // Bullets
+  bullets.forEach(b=>{
+    ctx.shadowColor=b.owner===0?'#00f5ff':'#ff00aa'; ctx.shadowBlur=10;
+    ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+    ctx.fillStyle=b.owner===0?'#00f5ff':'#ff00aa'; ctx.fill();
+    ctx.shadowBlur=0;
+  });
+  // Explosions
+  explosions=explosions.filter(e=>e.t<e.max);
+  explosions.forEach(e=>{
+    const p=e.t/e.max;
+    ctx.beginPath(); ctx.arc(e.x,e.y,30*p,0,Math.PI*2);
+    ctx.fillStyle=`rgba(255,120,0,${0.8*(1-p)})`; ctx.fill();
+    e.t++;
+  });
+  // Tanks
+  tanks.forEach(t=>{
+    if(!t.alive) return;
+    if(t.shield>0 && Math.floor(t.shield/6)%2===0) return;
+    ctx.save(); ctx.translate(t.x,t.y); ctx.rotate(t.angle);
+    ctx.shadowColor=t.glow; ctx.shadowBlur=14;
+    ctx.fillStyle=t.color;
+    ctx.fillRect(-13,-9,26,18);
+    ctx.fillStyle='#000'; ctx.fillRect(-13,-9,26,4); ctx.fillRect(-13,5,26,4);
+    ctx.beginPath(); ctx.arc(0,0,8,0,Math.PI*2); ctx.fillStyle=t.color; ctx.fill();
+    ctx.fillRect(6,-3,16,6);
+    ctx.restore();
+  });
+}
+
+function loop(){
+  if(!running) return;
+  updateTank(tanks[0],'w','s','a','d','f');
+  if(mode==='2p') updateTank(tanks[1],'ArrowUp','ArrowDown','ArrowLeft','ArrowRight','l');
+  else updateTankAI(tanks[1]);
+  updateBullets();
+  draw();
+  animId=requestAnimationFrame(loop);
+}
+
+function startGame(){
+  lives=[3,3];
+  document.getElementById('s1').textContent='3'; document.getElementById('s2').textContent='3';
+  buildWalls();
+  initTanks();
+  running=true;
+  document.getElementById('ov').classList.add('h');
+  if(animId) cancelAnimationFrame(animId);
+  loop();
+}
+
+function endGame(winner){
+  running=false;
+  cancelAnimationFrame(animId);
+  const ov=document.getElementById('ov');
+  ov.classList.remove('h');
+  ov.querySelector('.ot').textContent = winner===0?'🏆 TANK ACE VICTORY!':'🤖 BOT WON THE WAR!';
+  ov.querySelector('.os').textContent = `Lives Remaining: P1 (${lives[0]}) — P2 (${lives[1]})`;
+  ov.querySelector('.ob').textContent = 'FIGHT AGAIN';
+}
+
+function setMode(m){
+  mode=m;
+  document.getElementById('mFAI').classList.toggle('active',m==='fai');
+  document.getElementById('mHAI').classList.toggle('active',m==='hai');
+  document.getElementById('m2P').classList.toggle('active',m==='2p');
+  document.getElementById('lblP2').textContent = m==='fai'?'FAI Tank':(m==='hai'?'HAI Tank':'P2 Lives');
+}
+
+buildWalls(); initTanks();
+draw();
 </script>
 </body>
 </html>

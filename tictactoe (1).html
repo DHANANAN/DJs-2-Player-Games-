@@ -347,22 +347,22 @@
 
 <!-- TOP NAV -->
 <nav class="top-nav">
-  <a href="../index.html" class="back">← Hub</a>
+  <a href="index.html" class="back">← Hub</a>
   <span class="game-title">Tic Tac Toe</span>
   <span style="width:80px"></span>
 </nav>
 
 <!-- MODE SELECTOR -->
 <div class="mode-row">
-  <button class="mode-btn active" id="btn2p" onclick="setMode('2p')">👥 2 Player</button>
-  <button class="mode-btn" id="btnAI" onclick="setMode('ai')">🤖 vs AI</button>
+  <button class="mode-btn" id="btn2p" onclick="setMode('2p')">👥 2 Player</button>
+  <button class="mode-btn active" id="btnAI" onclick="setMode('ai')">🤖 vs AI</button>
 </div>
 
 <!-- DIFFICULTY (AI only) -->
-<div class="diff-row hidden" id="diffRow">
-  <button class="diff-btn diff-easy active" onclick="setDiff('easy')">Easy</button>
+<div class="diff-row" id="diffRow">
+  <button class="diff-btn diff-easy active" onclick="setDiff('easy')">💚 FAI (Easy)</button>
   <button class="diff-btn diff-medium" onclick="setDiff('medium')">Medium</button>
-  <button class="diff-btn diff-hard" onclick="setDiff('hard')">Hard</button>
+  <button class="diff-btn diff-hard" onclick="setDiff('hard')">🔥 HAI (Unbeatable)</button>
 </div>
 
 <!-- STATUS BAR -->

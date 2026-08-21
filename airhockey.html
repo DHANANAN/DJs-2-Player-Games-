@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no"/>
 <title>Air Hockey — DJ's Games Hub</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet"/>
 <style>
@@ -10,17 +10,29 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;
   min-height:100vh;display:flex;flex-direction:column;align-items:center;
-  padding:1.2rem 1rem;overflow-x:hidden;}
+  padding:1rem .8rem;overflow-x:hidden;touch-action:none;}
 body::before{content:'';position:fixed;inset:0;z-index:999;
   background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;}
-.nav{width:100%;max-width:700px;display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}
+.nav{width:100%;max-width:720px;display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;}
 .back{font-family:'Orbitron',sans-serif;font-size:.6rem;font-weight:700;color:var(--dim);
   text-decoration:none;border:1px solid var(--dim);padding:.45rem .9rem;letter-spacing:.1em;transition:all .3s;}
 .back:hover{color:var(--cyan);border-color:var(--cyan);}
 .title{font-family:'Press Start 2P',monospace;font-size:.85rem;color:var(--cyan);
   text-shadow:0 0 18px rgba(0,245,255,.6);}
-.scores{width:100%;max-width:700px;display:grid;grid-template-columns:1fr auto 1fr;
-  margin-bottom:.8rem;}
+
+/* MODE ROW */
+.mode-row { display: flex; gap: 0.5rem; margin-bottom: 0.8rem; flex-wrap: wrap; justify-content: center; }
+.mode-btn {
+  font-family: 'Orbitron', sans-serif; font-size: 0.58rem; font-weight: 700;
+  letter-spacing: 0.12em; padding: 0.5rem 1.1rem;
+  background: transparent; color: var(--dim);
+  border: 1px solid var(--dim); cursor: pointer; transition: all 0.25s;
+}
+.mode-btn.active { color: var(--bg); background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 18px rgba(0,245,255,0.4); }
+.mode-btn.fai.active { background: var(--green); border-color: var(--green); box-shadow: 0 0 18px rgba(0,255,136,0.4); }
+.mode-btn.hai.active { background: var(--magenta); border-color: var(--magenta); box-shadow: 0 0 18px rgba(255,0,170,0.4); }
+
+.scores{width:100%;max-width:720px;display:grid;grid-template-columns:1fr auto 1fr;margin-bottom:.8rem;}
 .sb{text-align:center;padding:.6rem;border:1px solid var(--border);background:var(--panel);}
 .sb+.sb{border-left:none;}
 .sn{font-family:'Orbitron',sans-serif;font-size:2rem;font-weight:900;}
@@ -28,42 +40,29 @@ body::before{content:'';position:fixed;inset:0;z-index:999;
 .sn.p2{color:var(--magenta);text-shadow:0 0 14px rgba(255,0,170,.5);}
 .sn.mid{color:var(--dim);}
 .sl{font-family:'Orbitron',sans-serif;font-size:.5rem;color:var(--dim);letter-spacing:.12em;}
-.cw{position:relative;width:min(700px,96vw);border:1px solid var(--border);
-  background:#020208;overflow:hidden;margin-bottom:.8rem;}
+.cw{position:relative;width:min(720px,96vw);border:1px solid var(--border);
+  background:#020208;overflow:hidden;margin-bottom:.8rem;touch-action:none;}
 .cw::before{content:'';position:absolute;inset:-2px;
   background:linear-gradient(90deg,var(--cyan),var(--magenta),var(--cyan));z-index:-1;opacity:.4;}
-canvas{display:block;width:100%;}
+canvas{display:block;width:100%;touch-action:none;}
 .ov{position:absolute;inset:0;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;background:rgba(4,4,13,.88);z-index:10;}
+  align-items:center;justify-content:center;background:rgba(4,4,13,.9);z-index:10;padding:1rem;}
 .ov.h{display:none;}
 .ot{font-family:'Press Start 2P',monospace;font-size:clamp(.9rem,4vw,1.6rem);
   color:var(--gold);text-shadow:0 0 28px rgba(255,215,0,.7);text-align:center;margin-bottom:.7rem;}
-.os{font-family:'Orbitron',sans-serif;font-size:.6rem;color:var(--dim);letter-spacing:.15em;margin-bottom:1.5rem;}
+.os{font-family:'Orbitron',sans-serif;font-size:.6rem;color:var(--dim);letter-spacing:.15em;margin-bottom:1.4rem;text-align:center;line-height:1.8;}
 .ob{font-family:'Orbitron',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.2em;
   padding:.8rem 2rem;background:var(--cyan);color:var(--bg);border:none;cursor:pointer;
   box-shadow:0 0 22px rgba(0,245,255,.5);transition:all .25s;}
 .ob:hover{background:#fff;}
-.ctrl{width:100%;max-width:700px;display:grid;grid-template-columns:1fr 1fr;gap:.8rem;}
+.ctrl{width:100%;max-width:720px;display:grid;grid-template-columns:1fr 1fr;gap:.8rem;}
 .cb{border:1px solid var(--border);background:var(--panel);padding:.8rem 1rem;}
 .cb h4{font-family:'Orbitron',sans-serif;font-size:.55rem;color:var(--cyan);letter-spacing:.15em;margin-bottom:.5rem;}
 .cb p{font-size:.82rem;color:var(--dim);line-height:1.7;font-weight:300;}
 .k{display:inline-block;font-family:'Orbitron',sans-serif;font-size:.5rem;
   padding:.1rem .35rem;border:1px solid var(--border);color:var(--text);background:rgba(255,255,255,.05);}
 .goal-flash{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .2s;z-index:5;}
-/* ── Virtual D-pads (mobile only, auto-hidden on desktop) ── */
-.vpad-wrap{position:fixed;bottom:0;left:0;right:0;pointer-events:none;z-index:1000;
-  display:flex;justify-content:space-between;padding:0 .5rem .8rem;}
-.vpad{pointer-events:all;position:relative;width:130px;height:130px;}
-.vpad2r{pointer-events:all;position:relative;width:130px;height:130px;}
-.vbtn{position:absolute;width:44px;height:44px;background:rgba(0,245,255,.12);
-  border:2px solid rgba(0,245,255,.35);color:#00f5ff;font-size:1.1rem;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  touch-action:none;user-select:none;-webkit-user-select:none;}
-.vbtn:active,.vbtn.pressed{background:rgba(0,245,255,.4);}
-.vbtn.p2{background:rgba(255,0,170,.12);border-color:rgba(255,0,170,.35);color:#ff00aa;}
-.vbtn.p2:active,.vbtn.p2.pressed{background:rgba(255,0,170,.4);}
-.vup{top:0;left:43px;}.vdown{bottom:0;left:43px;}.vleft{left:0;top:43px;}.vright{right:0;top:43px;}
-@media(pointer:fine){.vpad-wrap{display:none!important;}}
+.mobile-tip{font-size:.75rem;color:var(--dim);text-align:center;margin-top:.4rem;}
 </style>
 </head>
 <body>
@@ -72,57 +71,48 @@ canvas{display:block;width:100%;}
   <span class="title">Air Hockey</span>
   <span style="width:70px"></span>
 </nav>
-<div class="scores">
-  <div class="sb"><div class="sn p1" id="s1">0</div><div class="sl">Player 1</div></div>
-  <div class="sb"><div class="sn mid">·</div><div class="sl">First to 7</div></div>
-  <div class="sb"><div class="sn p2" id="s2">0</div><div class="sl">Player 2</div></div>
+
+<div class="mode-row">
+  <button class="mode-btn fai active" id="mFAI" onclick="setMode('fai')">💚 vs FAI (Friendly Bot)</button>
+  <button class="mode-btn hai" id="mHAI" onclick="setMode('hai')">🔥 vs HAI (Pro Striker)</button>
+  <button class="mode-btn" id="m2P" onclick="setMode('2p')">👥 Local 2P</button>
 </div>
+
+<div class="scores">
+  <div class="sb"><div class="sn p1" id="s1">0</div><div class="sl" id="lblP1">Player 1 (You)</div></div>
+  <div class="sb"><div class="sn mid" id="targetScoreLbl">First to 3</div><div class="sl">Target Goals</div></div>
+  <div class="sb"><div class="sn p2" id="s2">0</div><div class="sl" id="lblP2">FAI Bot</div></div>
+</div>
+
 <div class="cw" id="cw">
   <canvas id="c" height="400"></canvas>
   <div class="ov" id="ov">
     <div class="ot">AIR HOCKEY</div>
-    <div class="os">WASD · Arrow Keys</div>
-    <button class="ob" onclick="start()">START GAME</button>
+    <div class="os">Touch &amp; Drag Mallet or WASD / Arrow Keys<br>First to 3 goals wins the match!</div>
+    <button class="ob" onclick="start()">START MATCH</button>
   </div>
   <div class="goal-flash" id="gf"></div>
 </div>
-<!-- Virtual D-pads (touch only) -->
-<div class="vpad-wrap" id="vpadWrap">
-  <div class="vpad">
-    <button class="vbtn vup" id="v1u">▲</button>
-    <button class="vbtn vleft" id="v1l">◀</button>
-    <button class="vbtn vright" id="v1r">▶</button>
-    <button class="vbtn vdown" id="v1d">▼</button>
-  </div>
-  <div class="vpad2r">
-    <button class="vbtn p2 vup" id="v2u">▲</button>
-    <button class="vbtn p2 vleft" id="v2l">◀</button>
-    <button class="vbtn p2 vright" id="v2r">▶</button>
-    <button class="vbtn p2 vdown" id="v2d">▼</button>
-  </div>
-</div>
+
 <div class="ctrl">
-  <div class="cb"><h4>// Player 1 (Blue)</h4>
-    <p><span class="k">W</span>/<span class="k">A</span>/<span class="k">S</span>/<span class="k">D</span> — Move Mallet</p></div>
-  <div class="cb"><h4>// Player 2 (Pink)</h4>
-    <p><span class="k">↑</span>/<span class="k">←</span>/<span class="k">↓</span>/<span class="k">→</span> — Move Mallet</p></div>
+  <div class="cb"><h4>// Player 1 (Blue Mallet)</h4>
+    <p><b>Touch Drag / Swipe</b> on left half or <span class="k">W</span><span class="k">A</span><span class="k">S</span><span class="k">D</span></p></div>
+  <div class="cb" id="ctrlRight"><h4>// Opponent (Pink Mallet)</h4>
+    <p id="ctrlRightText"><b>FAI Bot:</b> Plays gently and allows you to score easily!</p></div>
 </div>
+
+<p class="mobile-tip">📱 Touch &amp; drag anywhere on your side of the rink to hit the puck!</p>
 
 <script>
-/* ─── AIR HOCKEY ENGINE ───────────────────────────────────
-   Physics: puck has velocity with damping, bounces off walls
-   and mallets using elastic collision math.
-   Mallets are constrained to their half of the rink.
-   Goals at top/bottom of each side wall (not left/right like pong).
-   Actually: goals on LEFT wall (P2 scores) and RIGHT wall (P1 scores)
-   Goal height = center 30% of the wall.
-─────────────────────────────────────────────────────────── */
 const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
-let W,H, running=false, animId=null;
+let W, H, running=false, animId=null;
 let score=[0,0];
-const FRICTION=0.99, PUCK_R=14, MALLET_R=30, GOAL_H_RATIO=0.35;
+const WIN_SCORE=3; // Fixed match finish target
+const FRICTION=0.988, PUCK_R=14, MALLET_R=30, GOAL_H_RATIO=0.38;
 
-let puck,m1,m2;
+let mode='fai'; // 'fai', 'hai', '2p'
+let puck, m1, m2;
+let isScoring=false;
 const keys={};
 
 function resize(){
@@ -131,142 +121,223 @@ function resize(){
 }
 
 function initState(){
-  puck={x:W/2,y:H/2,vx:(Math.random()>.5?1:-1)*4,vy:(Math.random()-.5)*4,r:PUCK_R};
-  m1={x:MALLET_R+10, y:H/2, r:MALLET_R, vx:0,vy:0};
-  m2={x:W-MALLET_R-10,y:H/2, r:MALLET_R, vx:0,vy:0};
+  puck={x:W/2, y:H/2, vx:(Math.random()>.5?1:-1)*4.5, vy:(Math.random()-.5)*4, r:PUCK_R};
+  m1={x:MALLET_R+20, y:H/2, r:MALLET_R, vx:0, vy:0};
+  m2={x:W-MALLET_R-20, y:H/2, r:MALLET_R, vx:0, vy:0};
+  isScoring=false;
 }
 
-window.addEventListener('keydown',e=>{keys[e.key]=true;
-  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();});
+window.addEventListener('keydown',e=>{
+  keys[e.key]=true;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();
+});
 window.addEventListener('keyup',e=>{keys[e.key]=false;});
 
-const SPD=6;
-function update(){
-  // Mallet 1 (WASD) — left half only
-  let dx1=0,dy1=0;
-  if(keys['w']||keys['W'])dy1=-1;
-  if(keys['s']||keys['S'])dy1=1;
-  if(keys['a']||keys['A'])dx1=-1;
-  if(keys['d']||keys['D'])dx1=1;
-  m1.vx=dx1*SPD; m1.vy=dy1*SPD;
-  m1.x=Math.max(m1.r, Math.min(W/2-m1.r, m1.x+m1.vx));
-  m1.y=Math.max(m1.r, Math.min(H-m1.r, m1.y+m1.vy));
+// Direct Touch Mallet Dragging
+const cw=document.getElementById('cw');
+cw.addEventListener('touchstart',handleTouch,{passive:false});
+cw.addEventListener('touchmove',handleTouch,{passive:false});
 
-  // Mallet 2 (Arrows) — right half only
-  let dx2=0,dy2=0;
-  if(keys['ArrowUp'])dy2=-1;
-  if(keys['ArrowDown'])dy2=1;
-  if(keys['ArrowLeft'])dx2=-1;
-  if(keys['ArrowRight'])dx2=1;
-  m2.vx=dx2*SPD; m2.vy=dy2*SPD;
-  m2.x=Math.max(W/2+m2.r, Math.min(W-m2.r, m2.x+m2.vx));
-  m2.y=Math.max(m2.r, Math.min(H-m2.r, m2.y+m2.vy));
+function handleTouch(e){
+  if(!running) return;
+  e.preventDefault();
+  const rect=canvas.getBoundingClientRect();
+  for(let i=0; i<e.touches.length; i++){
+    const t=e.touches[i];
+    const tx=(t.clientX-rect.left)*(W/rect.width);
+    const ty=(t.clientY-rect.top)*(H/rect.height);
+
+    if(tx < W/2){
+      // Control P1 mallet
+      m1.x=Math.max(m1.r, Math.min(W/2-m1.r, tx));
+      m1.y=Math.max(m1.r, Math.min(H-m1.r, ty));
+    } else if(mode==='2p'){
+      // Control P2 mallet in 2P mode
+      m2.x=Math.max(W/2+m2.r, Math.min(W-m2.r, tx));
+      m2.y=Math.max(m2.r, Math.min(H-m2.r, ty));
+    }
+  }
+}
+
+// Mouse dragging support
+let isMouseDragging=false;
+canvas.addEventListener('mousedown',e=>{
+  if(!running) return;
+  isMouseDragging=true;
+  updateMouse(e);
+});
+window.addEventListener('mousemove',e=>{
+  if(!running || !isMouseDragging) return;
+  updateMouse(e);
+});
+window.addEventListener('mouseup',()=>{isMouseDragging=false;});
+
+function updateMouse(e){
+  const rect=canvas.getBoundingClientRect();
+  const mx=(e.clientX-rect.left)*(W/rect.width);
+  const my=(e.clientY-rect.top)*(H/rect.height);
+  m1.x=Math.max(m1.r, Math.min(W/2-m1.r, mx));
+  m1.y=Math.max(m1.r, Math.min(H-m1.r, my));
+}
+
+const SPD=6.5;
+function update(){
+  if(isScoring) return;
+
+  // Mallet 1 Keyboard (WASD)
+  let dx1=0, dy1=0;
+  if(keys['w']||keys['W']) dy1=-1;
+  if(keys['s']||keys['S']) dy1=1;
+  if(keys['a']||keys['A']) dx1=-1;
+  if(keys['d']||keys['D']) dx1=1;
+  if(dx1!==0||dy1!==0){
+    m1.x=Math.max(m1.r, Math.min(W/2-m1.r, m1.x+dx1*SPD));
+    m1.y=Math.max(m1.r, Math.min(H-m1.r, m1.y+dy1*SPD));
+  }
+
+  // Mallet 2 (2P Arrows or AI)
+  if(mode==='2p'){
+    let dx2=0, dy2=0;
+    if(keys['ArrowUp']) dy2=-1;
+    if(keys['ArrowDown']) dy2=1;
+    if(keys['ArrowLeft']) dx2=-1;
+    if(keys['ArrowRight']) dx2=1;
+    m2.x=Math.max(W/2+m2.r, Math.min(W-m2.r, m2.x+dx2*SPD));
+    m2.y=Math.max(m2.r, Math.min(H-m2.r, m2.y+dy2*SPD));
+  } else if(mode==='fai'){
+    // FAI: Slow, hesitant bot that retreats and allows human to score easily
+    const targetX = puck.x > W*0.6 ? Math.min(W-m2.r-10, puck.x+10) : W*0.85;
+    const targetY = puck.x > W*0.55 ? puck.y + Math.sin(Date.now()*0.003)*25 : H/2;
+    const aiSpeed = Math.max(2.0, 4.0 - score[1]*0.6); // Gets weaker when scoring!
+    m2.x += (targetX - m2.x) * 0.08 * (aiSpeed/4);
+    m2.y += (targetY - m2.y) * 0.08 * (aiSpeed/4);
+  } else if(mode==='hai'){
+    // HAI: Aggressive fast striker bot
+    let targetX = puck.x > W*0.5 ? puck.x : W*0.8;
+    let targetY = puck.y;
+    // Aim to hit puck forward towards player 1's goal
+    if(puck.x > W*0.5 && puck.x < m2.x){
+      targetX = puck.x - 10;
+    }
+    m2.x += (targetX - m2.x) * 0.16;
+    m2.y += (targetY - m2.y) * 0.16;
+  }
+  m2.x=Math.max(W/2+m2.r, Math.min(W-m2.r, m2.x));
+  m2.y=Math.max(m2.r, Math.min(H-m2.r, m2.y));
 
   // Puck movement
-  puck.x+=puck.vx; puck.y+=puck.vy;
-  puck.vx*=FRICTION; puck.vy*=FRICTION;
+  puck.x += puck.vx; puck.y += puck.vy;
+  puck.vx *= FRICTION; puck.vy *= FRICTION;
 
   // Wall bounce (top/bottom)
-  if(puck.y-puck.r<=0){puck.y=puck.r;puck.vy=Math.abs(puck.vy);}
-  if(puck.y+puck.r>=H){puck.y=H-puck.r;puck.vy=-Math.abs(puck.vy);}
+  if(puck.y - puck.r <= 0){ puck.y = puck.r; puck.vy = Math.abs(puck.vy); }
+  if(puck.y + puck.r >= H){ puck.y = H - puck.r; puck.vy = -Math.abs(puck.vy); }
 
-  // Goal zones: center GOAL_H_RATIO of left and right walls
-  const gTop=H*(1-GOAL_H_RATIO)/2, gBot=H*(1+GOAL_H_RATIO)/2;
-  const inGoalZone = puck.y>gTop && puck.y<gBot;
+  // Goal zones on left and right walls
+  const gTop = H * (1 - GOAL_H_RATIO) / 2;
+  const gBot = H * (1 + GOAL_H_RATIO) / 2;
+  const inGoalZone = puck.y > gTop && puck.y < gBot;
 
-  if(puck.x-puck.r<=0){
-    if(inGoalZone){ goal(1); return; }
-    else{ puck.x=puck.r; puck.vx=Math.abs(puck.vx); }
+  if(puck.x - puck.r <= 0){
+    if(inGoalZone){
+      goal(1); // Player 2 scores
+      return;
+    } else {
+      puck.x = puck.r; puck.vx = Math.abs(puck.vx);
+    }
   }
-  if(puck.x+puck.r>=W){
-    if(inGoalZone){ goal(0); return; }
-    else{ puck.x=W-puck.r; puck.vx=-Math.abs(puck.vx); }
+  if(puck.x + puck.r >= W){
+    if(inGoalZone){
+      goal(0); // Player 1 scores
+      return;
+    } else {
+      puck.x = W - puck.r; puck.vx = -Math.abs(puck.vx);
+    }
   }
 
-  // Mallet-puck collision (elastic)
-  malletCollide(m1); malletCollide(m2);
+  // Mallet-puck collisions
+  malletCollide(m1);
+  malletCollide(m2);
 
   // Speed cap
-  const spd=Math.hypot(puck.vx,puck.vy);
-  if(spd>18){puck.vx=puck.vx/spd*18;puck.vy=puck.vy/spd*18;}
-  if(spd<0.1){puck.vx=(Math.random()-.5)*2;puck.vy=(Math.random()-.5)*2;}
+  const spd=Math.hypot(puck.vx, puck.vy);
+  if(spd > 20){ puck.vx = (puck.vx/spd)*20; puck.vy = (puck.vy/spd)*20; }
+  if(spd < 0.1 && running){ puck.vx=(Math.random()-.5)*2; puck.vy=(Math.random()-.5)*2; }
 }
 
 function malletCollide(m){
-  const dx=puck.x-m.x, dy=puck.y-m.y;
-  const dist=Math.hypot(dx,dy);
-  const minDist=puck.r+m.r;
-  if(dist<minDist && dist>0){
-    const nx=dx/dist, ny=dy/dist;
-    // Separate
-    const overlap=minDist-dist;
-    puck.x+=nx*overlap; puck.y+=ny*overlap;
-    // Transfer velocity from mallet to puck
-    const relVx=puck.vx-m.vx, relVy=puck.vy-m.vy;
-    const dot=relVx*nx+relVy*ny;
-    if(dot<0){
-      puck.vx-=1.8*dot*nx + m.vx*.4;
-      puck.vy-=1.8*dot*ny + m.vy*.4;
+  const dx = puck.x - m.x, dy = puck.y - m.y;
+  const dist = Math.hypot(dx, dy);
+  const minDist = puck.r + m.r;
+  if(dist < minDist && dist > 0){
+    const nx = dx / dist, ny = dy / dist;
+    const overlap = minDist - dist;
+    puck.x += nx * overlap;
+    puck.y += ny * overlap;
+
+    const relVx = puck.vx - (m.vx || 0);
+    const relVy = puck.vy - (m.vy || 0);
+    const dot = relVx * nx + relVy * ny;
+    if(dot < 0){
+      puck.vx -= 1.85 * dot * nx;
+      puck.vy -= 1.85 * dot * ny;
     }
   }
 }
 
 function goal(scorer){
+  if(isScoring) return; // Prevent multi-trigger bug!
+  isScoring = true;
   score[scorer]++;
-  document.getElementById('s1').textContent=score[0];
-  document.getElementById('s2').textContent=score[1];
+  document.getElementById('s1').textContent = score[0];
+  document.getElementById('s2').textContent = score[1];
   flashGoal(scorer);
-  if(score[scorer]>=7){ endGame(scorer); return; }
-  setTimeout(()=>{ initState(); },800);
+
+  if(score[scorer] >= WIN_SCORE){
+    endGame(scorer);
+    return;
+  }
+  setTimeout(()=>{
+    initState();
+  }, 750);
 }
 
 function flashGoal(who){
   const gf=document.getElementById('gf');
-  gf.style.background=who===0?'rgba(0,245,255,.15)':'rgba(255,0,170,.15)';
+  gf.style.background=who===0?'rgba(0,245,255,.2)':'rgba(255,0,170,.2)';
   gf.style.opacity='1';
-  setTimeout(()=>gf.style.opacity='0',300);
+  setTimeout(()=>gf.style.opacity='0', 350);
 }
 
 function draw(){
   ctx.clearRect(0,0,W,H);
   ctx.fillStyle='#020208'; ctx.fillRect(0,0,W,H);
 
-  // Rink lines
-  ctx.strokeStyle='rgba(0,245,255,.08)'; ctx.lineWidth=2;
+  // Center circle and dividing line
+  ctx.strokeStyle='rgba(0,245,255,.1)'; ctx.lineWidth=2;
   ctx.beginPath(); ctx.arc(W/2,H/2,H*.35,0,Math.PI*2); ctx.stroke();
-  ctx.strokeStyle='rgba(0,245,255,.12)'; ctx.lineWidth=1.5;
+  ctx.strokeStyle='rgba(0,245,255,.15)'; ctx.lineWidth=1.5;
   ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.stroke();
-
-  // Center dot
-  ctx.beginPath(); ctx.arc(W/2,H/2,6,0,Math.PI*2);
-  ctx.fillStyle='rgba(0,245,255,.25)'; ctx.fill();
 
   // Goal zones
   const gTop=H*(1-GOAL_H_RATIO)/2, gBot=H*(1+GOAL_H_RATIO)/2;
-  // Left goal
-  ctx.fillStyle='rgba(0,245,255,.08)';
-  ctx.fillRect(0,gTop,8,gBot-gTop);
-  ctx.strokeStyle='rgba(0,245,255,.5)'; ctx.lineWidth=2;
-  ctx.strokeRect(0,gTop,8,gBot-gTop);
-  // Right goal
-  ctx.fillStyle='rgba(255,0,170,.08)';
-  ctx.fillRect(W-8,gTop,8,gBot-gTop);
-  ctx.strokeStyle='rgba(255,0,170,.5)';
-  ctx.strokeRect(W-8,gTop,8,gBot-gTop);
+  ctx.fillStyle='rgba(0,245,255,.1)'; ctx.fillRect(0,gTop,10,gBot-gTop);
+  ctx.strokeStyle='#00f5ff'; ctx.lineWidth=2.5; ctx.strokeRect(0,gTop,10,gBot-gTop);
 
-  // Goal arrows/labels
-  ctx.fillStyle='rgba(0,245,255,.5)';
-  ctx.font='bold 9px Orbitron'; ctx.textAlign='left';
-  ctx.fillText('◀ GOAL',6,gTop-5);
-  ctx.fillStyle='rgba(255,0,170,.5)';
-  ctx.textAlign='right';
-  ctx.fillText('GOAL ▶',W-6,gTop-5);
+  ctx.fillStyle='rgba(255,0,170,.1)'; ctx.fillRect(W-10,gTop,10,gBot-gTop);
+  ctx.strokeStyle='#ff00aa'; ctx.lineWidth=2.5; ctx.strokeRect(W-10,gTop,10,gBot-gTop);
 
-  // Mallet 1 (cyan)
+  // Goal text
+  ctx.fillStyle='rgba(0,245,255,.6)'; ctx.font='bold 10px Orbitron'; ctx.textAlign='left';
+  ctx.fillText('◀ GOAL', 14, gTop - 6);
+  ctx.fillStyle='rgba(255,0,170,.6)'; ctx.textAlign='right';
+  ctx.fillText('GOAL ▶', W - 14, gTop - 6);
+
+  // Draw mallets
   drawMallet(m1,'#00f5ff','rgba(0,245,255,.35)');
-  // Mallet 2 (magenta)
-  drawMallet(m2,'#ff00aa','rgba(255,0,170,.35)');
-  // Puck
+  drawMallet(m2, mode==='fai'?'#00ff88':'#ff00aa', mode==='fai'?'rgba(0,255,136,.35)':'rgba(255,0,170,.35)');
+
+  // Draw puck
   drawPuck();
 }
 
@@ -275,7 +346,6 @@ function drawMallet(m,col,glow){
   ctx.beginPath(); ctx.arc(m.x,m.y,m.r,0,Math.PI*2);
   ctx.fillStyle=glow; ctx.fill();
   ctx.strokeStyle=col; ctx.lineWidth=3; ctx.stroke();
-  // Inner ring
   ctx.beginPath(); ctx.arc(m.x,m.y,m.r*.4,0,Math.PI*2);
   ctx.fillStyle=col; ctx.fill();
   ctx.shadowBlur=0;
@@ -292,40 +362,59 @@ function drawPuck(){
   ctx.shadowBlur=0;
 }
 
-function loop(){ update(); draw(); animId=requestAnimationFrame(loop); }
+function loop(){
+  update();
+  draw();
+  if(running) animId=requestAnimationFrame(loop);
+}
 
 function start(){
-  resize(); initState(); running=true; score=[0,0];
+  resize();
+  initState();
+  running=true;
+  score=[0,0];
   document.getElementById('s1').textContent='0';
   document.getElementById('s2').textContent='0';
   document.getElementById('ov').classList.add('h');
-  if(animId)cancelAnimationFrame(animId);
+  if(animId) cancelAnimationFrame(animId);
   loop();
 }
 
 function endGame(w){
-  running=false; cancelAnimationFrame(animId);
+  running=false;
+  cancelAnimationFrame(animId);
   const ov=document.getElementById('ov');
   ov.classList.remove('h');
-  ov.querySelector('.ot').textContent=`🏆 Player ${w+1} Wins!`;
-  ov.querySelector('.os').textContent=`Final: ${score[0]} – ${score[1]}`;
-  ov.querySelector('.ob').textContent='Play Again';
-  ov.querySelector('.ob').onclick=()=>{score=[0,0];start();};
+  const winnerTitle = w===0 ? '🏆 YOU WON!' : (mode==='2p'?'🏆 Player 2 Wins!': (mode==='fai'?'🤖 FAI Won!':'🔥 HAI Pro Wins!'));
+  ov.querySelector('.ot').textContent=winnerTitle;
+  ov.querySelector('.os').textContent=`Final: ${score[0]} – ${score[1]} (First to ${WIN_SCORE})`;
+  ov.querySelector('.ob').textContent='PLAY AGAIN';
 }
-window.addEventListener('resize',()=>{if(running){resize();}});
-resize(); ctx.fillStyle='#020208'; ctx.fillRect(0,0,W,H);
 
-// ── Virtual D-pad bindings ──
-function bindVpad(id,key){
-  const btn=document.getElementById(id); if(!btn) return;
-  btn.addEventListener('touchstart',e=>{e.preventDefault();keys[key]=true;btn.classList.add('pressed');},{passive:false});
-  btn.addEventListener('touchend',e=>{e.preventDefault();keys[key]=false;btn.classList.remove('pressed');},{passive:false});
-  btn.addEventListener('touchcancel',e=>{keys[key]=false;btn.classList.remove('pressed');},{passive:false});
+function setMode(m){
+  mode=m;
+  document.getElementById('mFAI').classList.toggle('active',m==='fai');
+  document.getElementById('mHAI').classList.toggle('active',m==='hai');
+  document.getElementById('m2P').classList.toggle('active',m==='2p');
+  
+  const lblP2=document.getElementById('lblP2');
+  const ctrlRightText=document.getElementById('ctrlRightText');
+  
+  if(m==='fai'){
+    lblP2.textContent='FAI Bot (Easy)';
+    ctrlRightText.innerHTML='<b>FAI Bot:</b> Easy &amp; playful. Weakens as it scores so you win!';
+  } else if(m==='hai'){
+    lblP2.textContent='HAI Striker (Hard)';
+    ctrlRightText.innerHTML='<b>HAI Striker:</b> Fast offensive opponent with direct goal targeting.';
+  } else {
+    lblP2.textContent='Player 2';
+    ctrlRightText.innerHTML='<span class="k">↑</span><span class="k">←</span><span class="k">↓</span><span class="k">→</span> or Touch Right Half';
+  }
 }
-bindVpad('v1u','w'); bindVpad('v1d','s'); bindVpad('v1l','a'); bindVpad('v1r','d');
-bindVpad('v2u','ArrowUp'); bindVpad('v2d','ArrowDown'); bindVpad('v2l','ArrowLeft'); bindVpad('v2r','ArrowRight');
-// Lock orientation on mobile
-try{ screen.orientation?.lock('landscape').catch(()=>{}); }catch(e){}
+
+window.addEventListener('resize',()=>{ if(running) resize(); });
+resize();
+ctx.fillStyle='#020208'; ctx.fillRect(0,0,W,H);
 </script>
 </body>
 </html>

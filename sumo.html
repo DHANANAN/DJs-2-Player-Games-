@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no"/>
 <title>Sumo — DJ's Games Hub</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet"/>
 <style>
@@ -10,298 +10,342 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;
   min-height:100vh;display:flex;flex-direction:column;align-items:center;
-  padding:1.2rem 1rem;overflow-x:hidden;}
+  padding:1rem .8rem;overflow-x:hidden;touch-action:none;}
 body::before{content:'';position:fixed;inset:0;z-index:999;
   background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;}
-.nav{width:100%;max-width:600px;display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;}
+.nav{width:100%;max-width:620px;display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;}
 .back{font-family:'Orbitron',sans-serif;font-size:.6rem;font-weight:700;color:var(--dim);
   text-decoration:none;border:1px solid var(--dim);padding:.45rem .9rem;letter-spacing:.1em;transition:all .3s;}
 .back:hover{color:var(--cyan);border-color:var(--cyan);}
 .title{font-family:'Press Start 2P',monospace;font-size:.85rem;color:var(--gold);
   text-shadow:0 0 18px rgba(255,215,0,.6);}
-.scores{width:100%;max-width:600px;display:grid;grid-template-columns:1fr auto 1fr;margin-bottom:.8rem;}
-.sb{text-align:center;padding:.6rem;border:1px solid var(--border);background:var(--panel);}
+
+/* MODES */
+.mode-row{display:flex;gap:.5rem;margin-bottom:.6rem;flex-wrap:wrap;justify-content:center;}
+.m-btn{
+  font-family:'Orbitron',sans-serif;font-size:.58rem;font-weight:700;
+  letter-spacing:.1em;padding:.45rem 1rem;background:transparent;color:var(--dim);
+  border:1px solid var(--dim);cursor:pointer;transition:all .25s;
+}
+.m-btn.active{background:var(--cyan);color:var(--bg);border-color:var(--cyan);box-shadow:0 0 16px rgba(0,245,255,.4);}
+.m-btn.fai.active{background:var(--green);border-color:var(--green);box-shadow:0 0 16px rgba(0,255,136,.4);}
+.m-btn.hai.active{background:var(--magenta);border-color:var(--magenta);box-shadow:0 0 16px rgba(255,0,170,.4);}
+
+.scores{width:100%;max-width:620px;display:grid;grid-template-columns:1fr auto 1fr;margin-bottom:.6rem;}
+.sb{text-align:center;padding:.5rem;border:1px solid var(--border);background:var(--panel);}
 .sb+.sb{border-left:none;}
 .sn{font-family:'Orbitron',sans-serif;font-size:1.8rem;font-weight:900;}
 .sn.p1{color:var(--cyan);}
 .sn.p2{color:var(--magenta);}
-.sn.mid{color:var(--dim);}
-.sl{font-family:'Orbitron',sans-serif;font-size:.5rem;color:var(--dim);letter-spacing:.12em;}
-.cw{position:relative;width:min(600px,96vw);border:1px solid var(--border);
-  background:#020208;margin-bottom:.8rem;}
+.sn.mid{color:var(--dim);font-size:.75rem;line-height:2.2;}
+.sl{font-family:'Orbitron',sans-serif;font-size:.48rem;color:var(--dim);letter-spacing:.12em;}
+
+.cw{position:relative;width:min(620px,96vw);border:1px solid var(--border);
+  background:#020208;margin-bottom:.6rem;touch-action:none;}
 .cw::before{content:'';position:absolute;inset:-2px;
   background:linear-gradient(135deg,var(--gold),var(--cyan),var(--magenta));z-index:-1;opacity:.4;}
-canvas{display:block;width:100%;}
+canvas{display:block;width:100%;touch-action:none;}
+
 .ov{position:absolute;inset:0;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;background:rgba(4,4,13,.9);z-index:10;}
+  align-items:center;justify-content:center;background:rgba(4,4,13,.9);z-index:10;padding:1rem;}
 .ov.h{display:none;}
 .ot{font-family:'Press Start 2P',monospace;font-size:clamp(.85rem,3.5vw,1.5rem);
   color:var(--gold);text-shadow:0 0 28px rgba(255,215,0,.7);text-align:center;margin-bottom:.6rem;}
-.os{font-family:'Orbitron',sans-serif;font-size:.6rem;color:var(--dim);letter-spacing:.12em;margin-bottom:1.4rem;text-align:center;line-height:2;}
+.os{font-family:'Orbitron',sans-serif;font-size:.6rem;color:var(--dim);letter-spacing:.12em;margin-bottom:1.4rem;text-align:center;line-height:1.8;}
 .ob{font-family:'Orbitron',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.2em;
   padding:.8rem 2rem;background:var(--gold);color:var(--bg);border:none;cursor:pointer;transition:all .25s;}
 .ob:hover{background:#fff;}
-.ctrl{width:100%;max-width:600px;display:grid;grid-template-columns:1fr 1fr;gap:.8rem;}
+
+.ctrl{width:100%;max-width:620px;display:grid;grid-template-columns:1fr 1fr;gap:.8rem;}
 .cb{border:1px solid var(--border);background:var(--panel);padding:.8rem 1rem;}
-.cb h4{font-family:'Orbitron',sans-serif;font-size:.55rem;color:var(--cyan);letter-spacing:.15em;margin-bottom:.5rem;}
-.cb p{font-size:.82rem;color:var(--dim);line-height:1.7;}
+.cb h4{font-family:'Orbitron',sans-serif;font-size:.55rem;color:var(--cyan);letter-spacing:.15em;margin-bottom:.4rem;}
+.cb p{font-size:.82rem;color:var(--dim);line-height:1.6;}
 .k{display:inline-block;font-family:'Orbitron',sans-serif;font-size:.5rem;
   padding:.1rem .35rem;border:1px solid var(--border);color:var(--text);background:rgba(255,255,255,.05);}
-.vpad-wrap{position:fixed;bottom:0;left:0;right:0;pointer-events:none;z-index:1000;
-  display:flex;justify-content:space-between;padding:0 .5rem .8rem;}
-.vpad,.vpad2r{pointer-events:all;position:relative;width:130px;height:130px;}
-.vbtn{position:absolute;width:44px;height:44px;background:rgba(0,245,255,.12);
-  border:2px solid rgba(0,245,255,.35);color:#00f5ff;font-size:1.1rem;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  touch-action:none;user-select:none;-webkit-user-select:none;}
-.vbtn:active,.vbtn.pressed{background:rgba(0,245,255,.4);}
-.vbtn.p2{background:rgba(255,0,170,.12);border-color:rgba(255,0,170,.35);color:#ff00aa;}
-.vbtn.p2:active,.vbtn.p2.pressed{background:rgba(255,0,170,.4);}
-.vup{top:0;left:43px;}.vdown{bottom:0;left:43px;}.vleft{left:0;top:43px;}.vright{right:0;top:43px;}
-@media(pointer:fine){.vpad-wrap{display:none!important;}}
+.mobile-tip{font-size:.75rem;color:var(--dim);text-align:center;margin-top:.4rem;}
 </style>
 </head>
 <body>
 <nav class="nav">
   <a href="index.html" class="back">← Hub</a>
-  <span class="title">Sumo</span>
+  <span class="title">🤼 Sumo</span>
   <span style="width:70px"></span>
 </nav>
-<div class="scores">
-  <div class="sb"><div class="sn p1" id="s1">0</div><div class="sl">Player 1</div></div>
-  <div class="sb"><div class="sn mid">Best of 5</div><div class="sl">Rounds</div></div>
-  <div class="sb"><div class="sn p2" id="s2">0</div><div class="sl">Player 2</div></div>
+
+<div class="mode-row">
+  <button class="m-btn fai active" id="mFAI" onclick="setMode('fai')">💚 vs FAI (Friendly Bot)</button>
+  <button class="m-btn hai" id="mHAI" onclick="setMode('hai')">🔥 vs HAI (Sumo Master)</button>
+  <button class="m-btn" id="m2P" onclick="setMode('2p')">👥 Local 2P</button>
 </div>
-<div class="cw">
-  <canvas id="c" height="500"></canvas>
+
+<div class="scores">
+  <div class="sb"><div class="sn p1" id="s1">0</div><div class="sl">Player 1 (You)</div></div>
+  <div class="sb"><div class="sn mid" id="roundInfo">Round 1/5</div><div class="sl">Best of 5</div></div>
+  <div class="sb"><div class="sn p2" id="s2">0</div><div class="sl" id="lblP2">FAI Bot</div></div>
+</div>
+
+<div class="cw" id="cw">
+  <canvas id="c" height="480"></canvas>
   <div class="ov" id="ov">
-    <div class="ot">SUMO</div>
-    <div class="os">Push your opponent out of the ring!<br>WASD · Arrow Keys<br>Best of 5 rounds</div>
-    <button class="ob" onclick="startGame()">FIGHT!</button>
+    <div class="ot">SUMO ARENA</div>
+    <div class="os">Push your opponent outside the circular ring!<br>Touch &amp; Drag / Swipe or WASD / Arrow Keys</div>
+    <button class="ob" onclick="startGame()">ENTER THE RING</button>
   </div>
 </div>
+
 <div class="ctrl">
   <div class="cb"><h4>// Player 1 (Cyan)</h4>
-    <p><span class="k">W</span><span class="k">A</span><span class="k">S</span><span class="k">D</span> — Move &amp; Push</p></div>
-  <div class="cb"><h4>// Player 2 (Pink)</h4>
-    <p><span class="k">↑</span><span class="k">←</span><span class="k">↓</span><span class="k">→</span> — Move &amp; Push</p></div>
+    <p><b>Touch Drag / Swipe</b> anywhere on arena or <span class="k">W</span><span class="k">A</span><span class="k">S</span><span class="k">D</span></p></div>
+  <div class="cb" id="ctrlRight"><h4>// Opponent</h4>
+    <p id="ctrlRightText"><b>FAI Bot:</b> Easy &amp; gentle. Lets you push it out of the ring!</p></div>
 </div>
-<div class="vpad-wrap">
-  <div class="vpad">
-    <button class="vbtn vup" id="v1u">▲</button>
-    <button class="vbtn vleft" id="v1l">◀</button>
-    <button class="vbtn vright" id="v1r">▶</button>
-    <button class="vbtn vdown" id="v1d">▼</button>
-  </div>
-  <div class="vpad2r">
-    <button class="vbtn p2 vup" id="v2u">▲</button>
-    <button class="vbtn p2 vleft" id="v2l">◀</button>
-    <button class="vbtn p2 vright" id="v2r">▶</button>
-    <button class="vbtn p2 vdown" id="v2d">▼</button>
-  </div>
-</div>
+
+<p class="mobile-tip">📱 Swipe or drag toward the opponent to charge and push them out!</p>
 
 <script>
-/* ─── SUMO ENGINE ────────────────────────────────────────
-   Physics: two circular fighters on a circular ring
-   Movement: keyboard impulse → velocity → friction
-   Collision: elastic-ish push when fighters touch
-   Out-of-ring: when fighter center is outside ring radius → lose round
-────────────────────────────────────────────────────────── */
 const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
-let W,H,CX,CY,RING_R,FIGHTER_R;
+let W, H, CX, CY, RING_R, FIGHTER_R;
 const keys={};
-let p1,p2,scores=[0,0];
-let running=false,roundOver=false,animId=null;
-let roundWinner=-1,roundTimer=0;
+let p1, p2, scores=[0,0], currentRound=1;
+let running=false, roundOver=false, animId=null;
+let roundWinner=-1, roundTimer=0;
+let mode='fai'; // 'fai', 'hai', '2p'
 
 function resize(){
-  W=canvas.offsetWidth; H=500;
+  W=canvas.offsetWidth; H=480;
   canvas.width=W; canvas.height=H;
   CX=W/2; CY=H/2;
   RING_R=Math.min(W,H)*.38;
-  FIGHTER_R=RING_R*.12;
+  FIGHTER_R=RING_R*.13;
 }
 
 function initRound(){
   const offset=RING_R*.35;
-  p1={x:CX-offset,y:CY,vx:0,vy:0,r:FIGHTER_R,mass:1,alive:true,squish:1,bounce:0};
-  p2={x:CX+offset,y:CY,vx:0,vy:0,r:FIGHTER_R,mass:1,alive:true,squish:1,bounce:0};
+  p1={x:CX-offset, y:CY, vx:0, vy:0, r:FIGHTER_R, mass:1, alive:true};
+  p2={x:CX+offset, y:CY, vx:0, vy:0, r:FIGHTER_R, mass:1, alive:true};
   roundOver=false; roundWinner=-1; roundTimer=0;
 }
 
-window.addEventListener('keydown',e=>{keys[e.key]=true;
-  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();});
+window.addEventListener('keydown',e=>{
+  keys[e.key]=true;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();
+});
 window.addEventListener('keyup',e=>{keys[e.key]=false;});
 
-const ACCEL=0.5, FRICTION=0.88, MAX_V=5;
+// Touch / Swipe Impulse Input
+let touchStartX=0, touchStartY=0;
+canvas.addEventListener('touchstart',e=>{
+  if(!running||roundOver) return;
+  touchStartX=e.touches[0].clientX;
+  touchStartY=e.touches[0].clientY;
+},{passive:true});
+
+canvas.addEventListener('touchmove',e=>{
+  if(!running||roundOver) return;
+  e.preventDefault();
+  const tx=e.touches[0].clientX, ty=e.touches[0].clientY;
+  const dx=tx-touchStartX, dy=ty-touchStartY;
+  
+  // Apply impulse based on swipe / drag
+  p1.vx += dx * 0.08;
+  p1.vy += dy * 0.08;
+  touchStartX=tx; touchStartY=ty;
+},{passive:false});
+
+const ACCEL=0.55, FRICTION=0.88, MAX_V=5.5;
 
 function update(){
-  if(roundOver){ roundTimer++; if(roundTimer>90){initRound();} return; }
+  if(roundOver){
+    roundTimer++;
+    if(roundTimer>75){
+      if(scores[0]>=3 || scores[1]>=3){
+        endGame();
+      } else {
+        currentRound++;
+        document.getElementById('roundInfo').textContent=`Round ${currentRound}/5`;
+        initRound();
+      }
+    }
+    return;
+  }
 
-  // P1 input
+  // P1 Keys (WASD)
   if(keys['w']||keys['W']) p1.vy-=ACCEL;
   if(keys['s']||keys['S']) p1.vy+=ACCEL;
   if(keys['a']||keys['A']) p1.vx-=ACCEL;
   if(keys['d']||keys['D']) p1.vx+=ACCEL;
-  // P2 input
-  if(keys['ArrowUp'])    p2.vy-=ACCEL;
-  if(keys['ArrowDown'])  p2.vy+=ACCEL;
-  if(keys['ArrowLeft'])  p2.vx-=ACCEL;
-  if(keys['ArrowRight']) p2.vx+=ACCEL;
 
-  // Apply friction and cap
-  [p1,p2].forEach(p=>{
-    p.vx*=FRICTION; p.vy*=FRICTION;
-    const spd=Math.hypot(p.vx,p.vy);
-    if(spd>MAX_V){p.vx=p.vx/spd*MAX_V;p.vy=p.vy/spd*MAX_V;}
-    p.x+=p.vx; p.y+=p.vy;
-    // Squish animation
-    p.squish+=(1-p.squish)*.2;
-  });
+  // P2 2P Keys or AI
+  if(mode==='2p'){
+    if(keys['ArrowUp'])    p2.vy-=ACCEL;
+    if(keys['ArrowDown'])  p2.vy+=ACCEL;
+    if(keys['ArrowLeft'])  p2.vx-=ACCEL;
+    if(keys['ArrowRight']) p2.vx+=ACCEL;
+  } else if(mode==='fai'){
+    // FAI: Friendly AI, gently drifts and gets easily pushed
+    const dx = p1.x - p2.x, dy = p1.y - p2.y;
+    const dist = Math.hypot(dx,dy);
+    if(dist > 50){
+      p2.vx += (dx/dist)*0.18;
+      p2.vy += (dy/dist)*0.18;
+    }
+  } else if(mode==='hai'){
+    // HAI: Aggressive AI, charges towards player and dodges ring edge
+    const dx = p1.x - p2.x, dy = p1.y - p2.y;
+    const dist = Math.hypot(dx,dy);
+    p2.vx += (dx/dist)*0.6;
+    p2.vy += (dy/dist)*0.6;
 
-  // Fighter-fighter collision (push)
-  const dx=p2.x-p1.x, dy=p2.y-p1.y;
-  const dist=Math.hypot(dx,dy);
-  const minD=p1.r+p2.r;
-  if(dist<minD&&dist>0){
-    const nx=dx/dist, ny=dy/dist;
-    const overlap=(minD-dist)/2;
-    p1.x-=nx*overlap; p1.y-=ny*overlap;
-    p2.x+=nx*overlap; p2.y+=ny*overlap;
-    // Transfer momentum
-    const relVx=p1.vx-p2.vx, relVy=p1.vy-p2.vy;
-    const dot=relVx*nx+relVy*ny;
-    if(dot>0){
-      const impulse=dot*.9;
-      p1.vx-=impulse*nx; p1.vy-=impulse*ny;
-      p2.vx+=impulse*nx; p2.vy+=impulse*ny;
-      p1.squish=0.75; p2.squish=1.25;
+    // Edge evasion
+    const distFromCenter = Math.hypot(p2.x-CX, p2.y-CY);
+    if(distFromCenter > RING_R*0.75){
+      p2.vx += ((CX - p2.x)/distFromCenter)*0.4;
+      p2.vy += ((CY - p2.y)/distFromCenter)*0.4;
     }
   }
 
-  // Check ring boundary
-  [p1,p2].forEach((p,i)=>{
-    const d=Math.hypot(p.x-CX,p.y-CY);
-    if(d+p.r*0.5>RING_R){
-      roundOver=true;
-      roundWinner=1-i; // other player wins
-      scores[1-i]++;
-      document.getElementById(`s${2-i}`).textContent=scores[1-i];
-      if(scores[0]>=3||scores[1]>=3) setTimeout(endMatch,1500);
-    }
+  // Cap speed & apply friction
+  [p1,p2].forEach(p=>{
+    p.vx*=FRICTION; p.vy*=FRICTION;
+    const spd=Math.hypot(p.vx,p.vy);
+    if(spd>MAX_V){ p.vx=(p.vx/spd)*MAX_V; p.vy=(p.vy/spd)*MAX_V; }
+    p.x+=p.vx; p.y+=p.vy;
   });
-}
 
-function drawRing(){
-  // Outer shadow
-  ctx.shadowColor='rgba(255,215,0,.3)'; ctx.shadowBlur=30;
-  ctx.beginPath(); ctx.arc(CX,CY,RING_R,0,Math.PI*2);
-  ctx.fillStyle='#1a0e00'; ctx.fill();
-  ctx.strokeStyle='rgba(255,215,0,.7)'; ctx.lineWidth=4; ctx.stroke();
-  ctx.shadowBlur=0;
-  // Inner circle texture
-  ctx.strokeStyle='rgba(255,215,0,.12)'; ctx.lineWidth=1.5;
-  ctx.beginPath(); ctx.arc(CX,CY,RING_R*.7,0,Math.PI*2); ctx.stroke();
-  ctx.beginPath(); ctx.arc(CX,CY,RING_R*.35,0,Math.PI*2); ctx.stroke();
-  // Center dot
-  ctx.beginPath(); ctx.arc(CX,CY,6,0,Math.PI*2);
-  ctx.fillStyle='rgba(255,215,0,.3)'; ctx.fill();
-  // Ring lines (like a sumo ring)
-  ctx.strokeStyle='rgba(255,215,0,.25)'; ctx.lineWidth=1;
-  ctx.beginPath();
-  ctx.moveTo(CX-RING_R*.4,CY);ctx.lineTo(CX-RING_R*.08,CY);ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(CX+RING_R*.08,CY);ctx.lineTo(CX+RING_R*.4,CY);ctx.stroke();
-}
+  // Fighter-fighter collision (elastic pushing)
+  const dx=p2.x-p1.x, dy=p2.y-p1.y;
+  const dist=Math.hypot(dx,dy);
+  const minDist=p1.r+p2.r;
+  if(dist<minDist && dist>0){
+    const nx=dx/dist, ny=dy/dist;
+    const overlap=minDist-dist;
+    p1.x-=nx*overlap*0.5; p1.y-=ny*overlap*0.5;
+    p2.x+=nx*overlap*0.5; p2.y+=ny*overlap*0.5;
 
-function drawFighter(p,color,glow,label){
-  const sy=p.squish, sx=2-p.squish;
-  ctx.save();
-  ctx.translate(p.x,p.y);
-  ctx.scale(sx,sy);
-  // Shadow
-  ctx.beginPath(); ctx.arc(3,3,p.r,0,Math.PI*2);
-  ctx.fillStyle='rgba(0,0,0,.4)'; ctx.fill();
-  // Body
-  ctx.shadowColor=glow; ctx.shadowBlur=20;
-  const g=ctx.createRadialGradient(-p.r*.3,-p.r*.3,p.r*.1,0,0,p.r);
-  g.addColorStop(0,'rgba(255,255,255,.4)');
-  g.addColorStop(.5,color);
-  g.addColorStop(1,'rgba(0,0,0,.4)');
-  ctx.beginPath(); ctx.arc(0,0,p.r,0,Math.PI*2);
-  ctx.fillStyle=g; ctx.fill();
-  ctx.strokeStyle=color; ctx.lineWidth=2; ctx.stroke();
-  ctx.shadowBlur=0;
-  // Belt (mawashi)
-  ctx.fillStyle='rgba(255,215,0,.6)';
-  ctx.fillRect(-p.r*.5,-p.r*.12,p.r,p.r*.24);
-  // Face
-  ctx.fillStyle='#d4a57a';
-  ctx.beginPath(); ctx.arc(0,-p.r*.25,p.r*.35,0,Math.PI*2); ctx.fill();
-  // Eyes
-  ctx.fillStyle='#222';
-  ctx.beginPath(); ctx.arc(-p.r*.12,-p.r*.28,p.r*.07,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(p.r*.12,-p.r*.28,p.r*.07,0,Math.PI*2); ctx.fill();
-  ctx.restore();
-  // Label
-  ctx.fillStyle=color; ctx.font=`bold 11px Orbitron,sans-serif`;
-  ctx.textAlign='center'; ctx.fillText(label,p.x,p.y-p.r-6);
-}
+    const relVx=p1.vx-p2.vx, relVy=p1.vy-p2.vy;
+    const dot=relVx*nx+relVy*ny;
+    if(dot>0){
+      const impulse=dot*1.6;
+      p1.vx-=nx*impulse; p1.vy-=ny*impulse;
+      // FAI gets extra knockback when hit by player!
+      const p2ImpulseFactor = mode==='fai'?1.4:1.0;
+      p2.vx+=nx*impulse*p2ImpulseFactor; p2.vy+=ny*impulse*p2ImpulseFactor;
+    }
+  }
 
-function drawResult(){
-  if(!roundOver)return;
-  const t=`P${roundWinner+1} wins round!`;
-  ctx.fillStyle='rgba(4,4,13,.5)'; ctx.fillRect(0,0,W,H);
-  ctx.fillStyle=roundWinner===0?'#00f5ff':'#ff00aa';
-  ctx.shadowColor=roundWinner===0?'#00f5ff':'#ff00aa'; ctx.shadowBlur=24;
-  ctx.font=`bold clamp(.9rem,3.5vw,1.4rem) 'Press Start 2P',monospace`;
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(t,W/2,H/2);
-  ctx.shadowBlur=0;
+  // Ring boundary check (center must stay inside ring)
+  const d1=Math.hypot(p1.x-CX, p1.y-CY);
+  const d2=Math.hypot(p2.x-CX, p2.y-CY);
+
+  if(d1>RING_R){
+    roundOver=true; roundWinner=2;
+    scores[1]++;
+    document.getElementById('s2').textContent=scores[1];
+  } else if(d2>RING_R){
+    roundOver=true; roundWinner=1;
+    scores[0]++;
+    document.getElementById('s1').textContent=scores[0];
+  }
 }
 
 function draw(){
+  ctx.clearRect(0,0,W,H);
   ctx.fillStyle='#020208'; ctx.fillRect(0,0,W,H);
-  // Stars/bg
-  drawRing();
-  drawFighter(p1,'#00f5ff','rgba(0,245,255,.6)','P1');
-  drawFighter(p2,'#ff00aa','rgba(255,0,170,.6)','P2');
-  drawResult();
+
+  // Draw ring
+  ctx.beginPath(); ctx.arc(CX,CY,RING_R+8,0,Math.PI*2);
+  ctx.strokeStyle='rgba(255,215,0,0.2)'; ctx.lineWidth=6; ctx.stroke();
+
+  ctx.beginPath(); ctx.arc(CX,CY,RING_R,0,Math.PI*2);
+  ctx.fillStyle='#080816'; ctx.fill();
+  ctx.strokeStyle='#ffd700'; ctx.lineWidth=3; ctx.stroke();
+
+  // Draw center mark
+  ctx.beginPath(); ctx.arc(CX,CY,10,0,Math.PI*2);
+  ctx.fillStyle='rgba(255,215,0,0.3)'; ctx.fill();
+
+  // Draw Fighter 1 (Cyan)
+  drawFighter(p1, '#00f5ff', 'rgba(0,245,255,0.4)');
+
+  // Draw Fighter 2 (Magenta / Green)
+  drawFighter(p2, mode==='fai'?'#00ff88':'#ff00aa', mode==='fai'?'rgba(0,255,136,0.4)':'rgba(255,0,170,0.4)');
+
+  // Round over text
+  if(roundOver){
+    ctx.font='bold 22px Orbitron'; ctx.textAlign='center';
+    ctx.fillStyle=roundWinner===1?'#00f5ff':'#ff00aa';
+    ctx.shadowColor=ctx.fillStyle; ctx.shadowBlur=20;
+    const txt = roundWinner===1 ? 'YOU PUSHED OUT OPPONENT!' : (mode==='2p'?'PLAYER 2 SCORED!':'OPPONENT SCORED!');
+    ctx.fillText(txt, CX, CY-20);
+    ctx.shadowBlur=0;
+  }
 }
 
-function loop(){ update(); draw(); animId=requestAnimationFrame(loop); }
+function drawFighter(f, col, glow){
+  ctx.shadowColor=col; ctx.shadowBlur=18;
+  ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,Math.PI*2);
+  ctx.fillStyle=glow; ctx.fill();
+  ctx.strokeStyle=col; ctx.lineWidth=3; ctx.stroke();
+
+  // Inner core
+  ctx.beginPath(); ctx.arc(f.x,f.y,f.r*0.45,0,Math.PI*2);
+  ctx.fillStyle=col; ctx.fill();
+  ctx.shadowBlur=0;
+}
+
+function loop(){
+  update();
+  draw();
+  if(running) animId=requestAnimationFrame(loop);
+}
 
 function startGame(){
-  resize(); scores=[0,0];
+  resize();
+  scores=[0,0]; currentRound=1;
   document.getElementById('s1').textContent='0';
   document.getElementById('s2').textContent='0';
-  initRound(); running=true;
+  document.getElementById('roundInfo').textContent='Round 1/5';
   document.getElementById('ov').classList.add('h');
-  if(animId)cancelAnimationFrame(animId);
+  initRound();
+  running=true;
+  if(animId) cancelAnimationFrame(animId);
   loop();
 }
 
-function endMatch(){
+function endGame(){
+  running=false;
   cancelAnimationFrame(animId);
   const ov=document.getElementById('ov');
   ov.classList.remove('h');
-  const w=scores[0]>=3?0:1;
-  ov.querySelector('.ot').textContent=`🏆 Player ${w+1} Wins!`;
-  ov.querySelector('.os').textContent=`${scores[0]} – ${scores[1]} rounds`;
-  ov.querySelector('.ob').textContent='Play Again';
-  ov.querySelector('.ob').onclick=startGame;
+  const youWon = scores[0]>scores[1];
+  ov.querySelector('.ot').textContent = youWon ? '🏆 YOU ARE SUMO CHAMPION!' : '🤖 BOT TOOK THE CROWN!';
+  ov.querySelector('.os').textContent = `Final Score: ${scores[0]} — ${scores[1]}`;
+  ov.querySelector('.ob').textContent = 'FIGHT AGAIN';
 }
-window.addEventListener('resize',()=>{if(!running){resize();}});
-function bindVpad(id,key){
-  const btn=document.getElementById(id);if(!btn)return;
-  btn.addEventListener('touchstart',e=>{e.preventDefault();keys[key]=true;btn.classList.add('pressed');},{passive:false});
-  btn.addEventListener('touchend',e=>{e.preventDefault();keys[key]=false;btn.classList.remove('pressed');},{passive:false});
-  btn.addEventListener('touchcancel',e=>{keys[key]=false;btn.classList.remove('pressed');},{passive:false});
+
+function setMode(m){
+  mode=m;
+  document.getElementById('mFAI').classList.toggle('active',m==='fai');
+  document.getElementById('mHAI').classList.toggle('active',m==='hai');
+  document.getElementById('m2P').classList.toggle('active',m==='2p');
+  
+  const lblP2=document.getElementById('lblP2');
+  const ctrlRightText=document.getElementById('ctrlRightText');
+  if(m==='fai'){
+    lblP2.textContent='FAI Bot (Easy)';
+    ctrlRightText.innerHTML='<b>FAI Bot:</b> Gentle pusher. Allows you to easily win rounds!';
+  } else if(m==='hai'){
+    lblP2.textContent='HAI Sumo Master';
+    ctrlRightText.innerHTML='<b>HAI Master:</b> Fast aggressive charges with edge evasion.';
+  } else {
+    lblP2.textContent='Player 2';
+    ctrlRightText.innerHTML='<span class="k">↑</span><span class="k">←</span><span class="k">↓</span><span class="k">→</span> or Touch Drag';
+  }
 }
-bindVpad('v1u','W');bindVpad('v1d','S');bindVpad('v1l','A');bindVpad('v1r','D');
-bindVpad('v2u','ArrowUp');bindVpad('v2d','ArrowDown');bindVpad('v2l','ArrowLeft');bindVpad('v2r','ArrowRight');
-try{screen.orientation?.lock('landscape').catch(()=>{});}catch(e){}
+
+window.addEventListener('resize',()=>{ if(running) resize(); });
+resize();
+ctx.fillStyle='#020208'; ctx.fillRect(0,0,W,H);
 </script>
 </body>
 </html>
